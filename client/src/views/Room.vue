@@ -14,7 +14,7 @@
 							@paused="onPlaybackChange(false)"
 							@ready="onPlayerReady"
 						/>
-						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }"></div>
+						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }" @click="togglePlayback"></div>
 						<div class="playback-blocked-prompt" v-if="mediaPlaybackBlocked">
 							<v-btn
 								:prepend-icon="mdiPlay"
