@@ -12,10 +12,6 @@
 			}"
 			v-if="!showDisconnectedOverlay"
 		>
-			<!-- Embed mode debug indicator -->
-			<div v-if="isEmbedMode" style="position: fixed; top: 0; left: 0; background: red; color: white; padding: 10px; z-index: 9999; font-size: 14px;">
-				🎬 EMBED MODE ACTIVE
-			</div>
 			
 			<div class="room-header" v-if="!store.state.fullscreen && !isEmbedMode">
 				<h1 class="room-title">
@@ -277,14 +273,10 @@ export default defineComponent({
 
 		// Embed mode detection
 		const isEmbedMode = computed(() => {
-			const embedValue = route.query.embed;
-			const isEmbed = embedValue === 'true';
-			console.log('🔍 Embed mode debug:', { 
-				queryParam: embedValue, 
-				isEmbed, 
-				fullQuery: route.query,
-				fullPath: route.fullPath 
-			});
+			const isEmbed = route.query.embed === 'true';
+			if (isEmbed) {
+				console.log('🎬 Embed mode activated');
+			}
 			return isEmbed;
 		});
 
@@ -1018,5 +1010,25 @@ $in-video-chat-width-small: 250px;
 
 .embed-mode .v-footer {
 	display: none !important;
+}
+
+.embed-mode .v-app-bar {
+	display: none !important;
+}
+
+.embed-mode .v-navigation-drawer {
+	display: none !important;
+}
+
+.embed-mode .video-controls {
+	background: transparent !important;
+}
+
+/* Ensure video container takes full screen */
+.embed-mode .v-container {
+	padding: 0 !important;
+	margin: 0 !important;
+	max-width: none !important;
+	height: 100vh !important;
 }
 </style>
