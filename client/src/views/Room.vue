@@ -72,7 +72,7 @@
 							@paused="onPlaybackChange(false)"
 							@ready="onPlayerReady"
 						/>
-						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }"></div>
+						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }" @click="togglePlayback"></div>
 						<div class="in-video-chat" v-if="controlsMode === 'in-video'">
 							<Chat ref="chat" @link-click="setAddPreviewText" />
 						</div>
@@ -1000,11 +1000,15 @@ $in-video-chat-width-small: 250px;
 
 /* Embed container styles - clean, minimal video player only */
 .embed-container {
+	position: fixed;
+	top: 0;
+	left: 0;
 	width: 100vw;
 	height: 100vh;
 	background: #000;
 	margin: 0;
 	padding: 0;
+	overflow: hidden;
 }
 
 .embed-container .video-container {
@@ -1013,6 +1017,8 @@ $in-video-chat-width-small: 250px;
 	display: grid;
 	grid-template-columns: 1fr;
 	grid-template-rows: 1fr;
+	margin: 0;
+	padding: 0;
 }
 
 .embed-container .video-subcontainer {
@@ -1020,11 +1026,15 @@ $in-video-chat-width-small: 250px;
 	height: 100vh;
 	display: flex;
 	flex-direction: column;
+	margin: 0;
+	padding: 0;
 }
 
 .embed-container .player-container {
 	width: 100%;
 	flex: 1;
 	position: relative;
+	margin: 0;
+	padding: 0;
 }
 </style>

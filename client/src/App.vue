@@ -6,7 +6,7 @@
 			:scroll-behavior="fullscreen ? 'inverted hide' : ' '"
 		>
 			<!-- TODO: replace the ' ' here with '' when this bug is fixed: https://github.com/vuetifyjs/vuetify/issues/17554 -->
-			<v-app-bar-nav-icon @click="drawer = true" role="menu" aria-label="nav menu" />
+			<v-app-bar-nav-icon @click="isEmbedMode ? redirectToFullSite() : drawer = true" role="menu" aria-label="nav menu" />
 			<v-img
 				:src="logoUrl"
 				max-width="32"
@@ -15,7 +15,8 @@
 				style="margin-right: 8px"
 			/>
 			<v-app-bar-title class="app-bar-title">
-				<router-link class="link-invis" to="/">OpenTogetherTube</router-link>
+				<router-link v-if="!isEmbedMode" class="link-invis" to="/">OpenTogetherTube</router-link>
+				<a v-else class="link-invis" @click="redirectToFullSite" style="cursor: pointer;">OpenTogetherTube</a>
 			</v-app-bar-title>
 			<v-toolbar-items v-if="$vuetify.display.lgAndUp">
 				<v-btn variant="text" to="/rooms">{{ $t("nav.browse") }}</v-btn>
@@ -148,7 +149,7 @@ import NavCreateRoom from "@/components/navbar/NavCreateRoom.vue";
 import Notifier from "@/components/Notifier.vue";
 import { loadLanguageAsync } from "@/i18n";
 import { createRoomHelper } from "@/util/roomcreator";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import logoUrl from "@/assets/logo.svg";
 import { useStore } from "@/store";
 import LocaleSelector from "@/components/navbar/LocaleSelector.vue";
@@ -165,10 +166,14 @@ const App = defineComponent({
 	},
 	setup() {
 		const store = useStore();
+		const route = useRoute();
 
 		const showCreateRoomForm = ref(false);
 		const showLogin = ref(false);
 		const drawer = ref(false);
+
+		// Embed mode detection
+		const isEmbedMode = computed(() => route.query.embed === 'true');
 
 		const logout = async () => {
 			const res = await API.post("/user/logout");
@@ -188,6 +193,10 @@ const App = defineComponent({
 
 		const createTempRoom = async () => {
 			await createRoomHelper(store);
+		};
+
+		const redirectToFullSite = () => {
+			window.open('https://play.thunderhillcinema.com', '_blank');
 		};
 
 		onMounted(async () => {
@@ -235,10 +244,12 @@ const App = defineComponent({
 			showLogin,
 			drawer,
 			fullscreen,
+			isEmbedMode,
 			logout,
 			setLocale,
 			cancelRoom,
 			createTempRoom,
+			redirectToFullSite,
 			logoUrl,
 			store,
 			mdiBug,
