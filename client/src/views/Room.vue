@@ -1074,7 +1074,10 @@ $in-video-chat-width-small: 250px;
 		height: 100%; // Fill parent container
 		
 		// Ensure video area maintains proper aspect ratio and fits available space
-		> * {
+		// Only apply grid positioning to video elements, not overlay elements like mouse-event-swallower
+		.player,
+		.omniplayer-container,
+		.playback-blocked-prompt {
 			grid-row: 1;
 			min-height: 200px; // Reasonable minimum for video visibility
 			overflow: hidden;

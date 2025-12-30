@@ -108,9 +108,30 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 		align-items: center;
 		gap: 8px;
 
-		// Mobile-responsive gap
+		// Mobile-responsive layout with horizontal scrolling
 		@media (max-width: variables.$xs-max) {
 			gap: 12px;
+			overflow-x: auto;
+			flex-wrap: nowrap; // Prevent wrapping to enable horizontal scroll
+			padding-right: 8px; // Add padding for scroll area
+			
+			// Smooth scrolling behavior
+			scroll-behavior: smooth;
+			-webkit-overflow-scrolling: touch;
+			
+			// Hide scrollbar but keep functionality
+			scrollbar-width: thin;
+			&::-webkit-scrollbar {
+				height: 3px;
+			}
+			&::-webkit-scrollbar-track {
+				background: rgba(255, 255, 255, 0.1);
+				border-radius: 3px;
+			}
+			&::-webkit-scrollbar-thumb {
+				background: rgba(255, 255, 255, 0.3);
+				border-radius: 3px;
+			}
 		}
 	}
 }
