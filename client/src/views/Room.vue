@@ -1019,9 +1019,9 @@ $in-video-chat-width-small: 250px;
 		touch-action: none;
 		-webkit-overflow-scrolling: touch;
 		
-		// When embedded in another page, add padding for external UI
-		padding-top: 60px; // Space for external header
-		padding-bottom: 20px; // Space for external controls/content
+		// When embedded in another page, add significant padding for external UI
+		padding-top: 100px; // Space for external header + margins + safe area
+		padding-bottom: 80px; // Space for external controls/content + safe area
 	}
 }
 
@@ -1035,9 +1035,9 @@ $in-video-chat-width-small: 250px;
 	padding: 0;
 	
 	@media (max-width: variables.$xs-max) {
-		height: calc(100dvh - 80px); // Subtract padding from total height
+		height: calc(100dvh - 180px); // Subtract total padding (100px + 80px) from height
 		// Ensure content fills mobile viewport properly
-		min-height: 0;
+		min-height: 300px; // Ensure minimum viable space for video + controls
 	}
 }
 
@@ -1050,9 +1050,9 @@ $in-video-chat-width-small: 250px;
 	padding: 0;
 	
 	@media (max-width: variables.$xs-max) {
-		height: calc(100dvh - 80px); // Match video-container height
+		height: calc(100dvh - 180px); // Match video-container height  
 		// Use flex layout that properly accommodates grid child
-		min-height: 0;
+		min-height: 300px; // Match video-container minimum
 		flex: 1;
 		overflow: hidden;
 	}
@@ -1068,39 +1068,40 @@ $in-video-chat-width-small: 250px;
 	overflow: hidden;
 	
 	@media (max-width: variables.$xs-max) {
-		// Use CSS Grid for proper space allocation instead of padding
+		// Use CSS Grid for proper space allocation with increased spacing
 		display: grid;
 		grid-template-rows: 1fr auto;
-		min-height: calc(100dvh - media-controls.$video-controls-height-mobile);
+		min-height: calc(100dvh - 180px - media-controls.$video-controls-height-mobile);
 		
-		// Ensure video area maintains proper aspect ratio
+		// Ensure video area maintains proper aspect ratio with more space
 		> * {
 			grid-row: 1;
-			min-height: 200px; // Prevent video from becoming too small
+			min-height: 250px; // Increase minimum to ensure video visibility
 			object-fit: contain;
 		}
 		
-		// Position video controls in separate grid row
+		// Position video controls in separate grid row with margin
 		.video-controls {
 			grid-row: 2;
 			position: relative;
 			bottom: auto;
+			margin-top: 10px; // Add spacing between video and controls
 		}
 		
-		// Improve video element scaling on mobile with better constraints
+		// Improve video element scaling on mobile with relaxed constraints
 		video, iframe {
 			object-fit: contain;
 			width: 100%;
 			height: 100%;
-			max-height: calc(100dvh - media-controls.$video-controls-height-mobile - 20px);
-			min-height: 200px;
+			max-height: calc(100dvh - 220px); // More generous spacing
+			min-height: 250px; // Match parent container
 		}
 		
 		// Ensure any embedded players scale correctly
 		.omniplayer-container {
 			width: 100%;
 			height: 100%;
-			min-height: 200px;
+			min-height: 250px;
 		}
 	}
 }
