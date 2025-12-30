@@ -196,7 +196,7 @@ const App = defineComponent({
 		};
 
 		const redirectToFullSite = () => {
-			window.open('https://play.thunderhillcinema.com', '_blank');
+			window.open('https://opentogethertube.com', '_blank');
 		};
 
 		onMounted(async () => {

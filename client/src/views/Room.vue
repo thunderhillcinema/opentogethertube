@@ -1047,8 +1047,10 @@ $in-video-chat-width-small: 250px;
 	
 	@media (max-width: variables.$xs-max) {
 		height: 100dvh;
-		// Reserve space for mobile controls at bottom
+		// Use flex layout that properly accommodates grid child
 		min-height: 0;
+		flex: 1;
+		overflow: hidden;
 	}
 }
 
@@ -1062,21 +1064,39 @@ $in-video-chat-width-small: 250px;
 	overflow: hidden;
 	
 	@media (max-width: variables.$xs-max) {
-		// Account for larger mobile controls
-		padding-bottom: media-controls.$video-controls-height-mobile;
-		min-height: 0;
+		// Use CSS Grid for proper space allocation instead of padding
+		display: grid;
+		grid-template-rows: 1fr auto;
+		min-height: calc(100dvh - media-controls.$video-controls-height-mobile);
 		
-		// Improve video element scaling on mobile
+		// Ensure video area maintains proper aspect ratio
+		> * {
+			grid-row: 1;
+			min-height: 200px; // Prevent video from becoming too small
+			object-fit: contain;
+		}
+		
+		// Position video controls in separate grid row
+		.video-controls {
+			grid-row: 2;
+			position: relative;
+			bottom: auto;
+		}
+		
+		// Improve video element scaling on mobile with better constraints
 		video, iframe {
 			object-fit: contain;
-			width: 100% !important;
-			height: 100% !important;
+			width: 100%;
+			height: 100%;
+			max-height: calc(100dvh - media-controls.$video-controls-height-mobile - 20px);
+			min-height: 200px;
 		}
 		
 		// Ensure any embedded players scale correctly
 		.omniplayer-container {
-			width: 100% !important;
-			height: 100% !important;
+			width: 100%;
+			height: 100%;
+			min-height: 200px;
 		}
 	}
 }

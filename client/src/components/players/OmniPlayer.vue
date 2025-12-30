@@ -393,6 +393,7 @@ const renderedSpans = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@use "../../variables.scss";
 .no-video {
 	display: flex;
 	height: 100%;
@@ -423,6 +424,16 @@ const renderedSpans = computed(() => {
 .player {
 	width: 100%;
 	height: 100%;
+	
+	// Ensure proper scaling on mobile devices
+	@media (max-width: variables.$xs-max) {
+		min-height: 200px;
+		max-height: calc(100dvh - 140px); // Account for controls and safe areas
+		
+		// Prevent player from becoming too small
+		aspect-ratio: 16/9;
+		object-fit: contain;
+	}
 }
 
 .in-player-notifs {
