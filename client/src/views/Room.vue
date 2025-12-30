@@ -787,6 +787,7 @@ export default defineComponent({
 
 <style lang="scss">
 @use "../variables.scss";
+@use "../components/controls/media-controls.scss";
 
 $video-player-max-height: 75vh;
 $video-player-max-height-theater: 90vh;
@@ -1009,6 +1010,15 @@ $in-video-chat-width-small: 250px;
 	margin: 0;
 	padding: 0;
 	overflow: hidden;
+	
+	// Mobile viewport handling
+	@media (max-width: variables.$xs-max) {
+		// Use dynamic viewport height for mobile browsers
+		height: 100dvh;
+		// Ensure proper touch scrolling is disabled
+		touch-action: none;
+		-webkit-overflow-scrolling: touch;
+	}
 }
 
 .embed-container .video-container {
@@ -1019,6 +1029,12 @@ $in-video-chat-width-small: 250px;
 	grid-template-rows: 1fr;
 	margin: 0;
 	padding: 0;
+	
+	@media (max-width: variables.$xs-max) {
+		height: 100dvh;
+		// Ensure content fills mobile viewport properly
+		min-height: 0;
+	}
 }
 
 .embed-container .video-subcontainer {
@@ -1028,6 +1044,12 @@ $in-video-chat-width-small: 250px;
 	flex-direction: column;
 	margin: 0;
 	padding: 0;
+	
+	@media (max-width: variables.$xs-max) {
+		height: 100dvh;
+		// Reserve space for mobile controls at bottom
+		min-height: 0;
+	}
 }
 
 .embed-container .player-container {
@@ -1036,5 +1058,50 @@ $in-video-chat-width-small: 250px;
 	position: relative;
 	margin: 0;
 	padding: 0;
+	// Ensure video scales properly
+	overflow: hidden;
+	
+	@media (max-width: variables.$xs-max) {
+		// Account for larger mobile controls
+		padding-bottom: media-controls.$video-controls-height-mobile;
+		min-height: 0;
+		
+		// Improve video element scaling on mobile
+		video, iframe {
+			object-fit: contain;
+			width: 100% !important;
+			height: 100% !important;
+		}
+		
+		// Ensure any embedded players scale correctly
+		.omniplayer-container {
+			width: 100% !important;
+			height: 100% !important;
+		}
+	}
+}
+
+// Additional mobile embed mode optimizations
+@media (max-width: variables.$xs-max) {
+	// When in embed mode on mobile, ensure body doesn't scroll
+	body:has(.embed-container) {
+		overflow: hidden;
+		position: fixed;
+		width: 100%;
+		height: 100%;
+	}
+	
+	// Mobile-specific video control positioning in embed mode
+	.embed-container .video-controls {
+		&.in-video {
+			// Ensure controls are always visible on mobile for better UX
+			opacity: 0.8;
+			backdrop-filter: blur(4px);
+			
+			&:not(.hide) {
+				opacity: 1;
+			}
+		}
+	}
 }
 </style>

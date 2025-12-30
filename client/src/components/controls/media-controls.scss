@@ -1,10 +1,20 @@
 @use 'vuetify/settings';
+@use '../variables.scss';
 
+// Mobile-responsive video controls height
 $video-controls-height: 90px;
+$video-controls-height-mobile: 120px;
+
 $media-control-surface: rgb(var(--v-theme-media-control-surface));
 $menu-background: rgba(var(--v-theme-surface), 0.9);
 $menu-radius: 10px;
 
 .media-control {
 	color: $media-control-surface;
+	
+	// Mobile-specific sizing for touch interaction
+	@media (max-width: variables.$xs-max) {
+		min-width: 44px;
+		min-height: 44px;
+	}
 }

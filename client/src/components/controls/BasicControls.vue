@@ -1,8 +1,9 @@
 <template>
-	<div>
+	<div class="basic-controls">
 		<v-btn
 			variant="text"
 			icon
+			:size="buttonSize"
 			@click="seekDelta(-10)"
 			:disabled="!granted('playback.seek')"
 			class="media-control"
@@ -16,9 +17,10 @@
 		<v-btn
 			variant="text"
 			icon
+			:size="buttonSize"
 			@click="togglePlayback()"
 			:disabled="!granted('playback.play-pause')"
-			class="media-control"
+			class="media-control play-pause-btn"
 			:aria-label="$t('room.play-pause')"
 		>
 			<v-icon :icon="store.state.room.isPlaying ? mdiPause : mdiPlay" />
@@ -29,6 +31,7 @@
 		<v-btn
 			variant="text"
 			icon
+			:size="buttonSize"
 			@click="seekDelta(10)"
 			:disabled="!granted('playback.seek')"
 			class="media-control"
@@ -42,6 +45,7 @@
 		<v-btn
 			variant="text"
 			icon
+			:size="buttonSize"
 			@click="skip()"
 			:disabled="!granted('playback.skip')"
 			class="media-control"
@@ -66,11 +70,12 @@
 <script lang="ts" setup>
 import { mdiChevronLeft, mdiPlay, mdiPause, mdiChevronRight, mdiSkipForward } from "@mdi/js";
 import _ from "lodash";
-import { onMounted, onUnmounted } from "vue";
+import { onMounted, onUnmounted, computed } from "vue";
 import { useStore } from "@/store";
 import { useConnection } from "@/plugins/connection";
 import { useRoomApi } from "@/util/roomapi";
 import { useGrants } from "../composables/grants";
+import { useDisplay } from 'vuetify';
 
 const props = withDefaults(
 	defineProps<{
@@ -86,6 +91,12 @@ const emit = defineEmits(["seek", "play", "pause", "skip"]);
 const store = useStore();
 const roomapi = useRoomApi(useConnection());
 const granted = useGrants();
+const { mobile } = useDisplay();
+
+// Mobile-responsive button sizing
+const buttonSize = computed(() => {
+	return mobile.value ? 'large' : 'default';
+});
 
 // Setup Media Session API handlers for the controls in PiP
 onMounted(() => {
@@ -144,4 +155,22 @@ function skip() {
 
 <style lang="scss">
 @use "./media-controls.scss";
+@use "../../variables.scss";
+
+.basic-controls {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+
+	// Mobile-specific styling for better touch interaction
+	@media (max-width: variables.$xs-max) {
+		gap: 8px;
+		
+		.play-pause-btn {
+			// Make play/pause button slightly larger on mobile for primary action
+			min-width: 52px !important;
+			min-height: 52px !important;
+		}
+	}
+}
 </style>

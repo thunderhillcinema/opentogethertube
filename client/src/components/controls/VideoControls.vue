@@ -66,6 +66,12 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 	padding: 12px;
 	width: 100%;
 
+	// Mobile-responsive height and padding
+	@media (max-width: variables.$xs-max) {
+		min-height: media-controls.$video-controls-height-mobile;
+		padding: 16px;
+	}
+
 	&.in-video {
 		position: absolute;
 		bottom: 0;
@@ -99,6 +105,12 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 	.controls-row2 {
 		display: flex;
 		align-items: center;
+		gap: 8px;
+
+		// Mobile-responsive gap
+		@media (max-width: variables.$xs-max) {
+			gap: 12px;
+		}
 	}
 }
 </style>
