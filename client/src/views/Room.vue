@@ -1027,7 +1027,7 @@ $in-video-chat-width-small: 250px;
 
 .embed-container .video-container {
 	width: 100%;
-	height: 100vh;
+	height: 100%;
 	display: grid;
 	grid-template-columns: 1fr;
 	grid-template-rows: 1fr;
@@ -1035,7 +1035,7 @@ $in-video-chat-width-small: 250px;
 	padding: 0;
 	
 	@media (max-width: variables.$xs-max) {
-		height: calc(100dvh - 140px); // Subtract total padding (80px + 60px) from height
+		height: 100%; // Fill parent container with padding
 		// Ensure content fills mobile viewport properly
 		min-height: 280px; // Ensure minimum viable space for video + controls
 	}
@@ -1043,14 +1043,14 @@ $in-video-chat-width-small: 250px;
 
 .embed-container .video-subcontainer {
 	width: 100%;
-	height: 100vh;
+	height: 100%;
 	display: flex;
 	flex-direction: column;
 	margin: 0;
 	padding: 0;
 	
 	@media (max-width: variables.$xs-max) {
-		height: calc(100dvh - 140px); // Match video-container height  
+		height: 100%; // Fill parent container
 		// Use flex layout that properly accommodates grid child
 		min-height: 280px; // Match video-container minimum
 		flex: 1;
@@ -1071,14 +1071,12 @@ $in-video-chat-width-small: 250px;
 		// Use CSS Grid for proper space allocation
 		display: grid;
 		grid-template-rows: 1fr auto;
-		min-height: calc(100dvh - 140px - media-controls.$video-controls-height-mobile);
-		max-height: calc(100dvh - 140px);
+		height: 100%; // Fill parent container
 		
 		// Ensure video area maintains proper aspect ratio and fits available space
 		> * {
 			grid-row: 1;
 			min-height: 200px; // Reasonable minimum for video visibility
-			max-height: calc(100dvh - 200px); // Ensure fit within available space
 			overflow: hidden;
 		}
 		
