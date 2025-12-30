@@ -1,20 +1,54 @@
 <template>
 	<div>
 		<!-- HACK: For some reason, safari really doesn't like typescript enums. As a result, we are forced to not use the enums, and use their literal values instead. -->
+		
+		<!-- EMBED MODE: Minimal video player only -->
+		<div v-if="isEmbedMode && !showDisconnectedOverlay" class="embed-container">
+			<div class="video-container">
+				<div class="video-subcontainer">
+					<div class="player-container" ref="playerContainer">
+						<OmniPlayer
+							:source="store.state.room.currentSource"
+							@apiready="onPlayerApiReady"
+							@playing="onPlaybackChange(true)"
+							@paused="onPlaybackChange(false)"
+							@ready="onPlayerReady"
+						/>
+						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }"></div>
+						<div class="playback-blocked-prompt" v-if="mediaPlaybackBlocked">
+							<v-btn
+								:prepend-icon="mdiPlay"
+								size="x-large"
+								color="warning"
+								@click="onClickUnblockPlayback"
+							>
+								{{ $t("common.play") }}
+							</v-btn>
+						</div>
+					</div>
+					<VideoControls
+						:slider-position="sliderPosition"
+						:true-position="truePosition"
+						:controls-visible="controlsVisible"
+						:key="currentSource?.id"
+						:mode="controlsMode"
+					/>
+				</div>
+			</div>
+		</div>
+		
+		<!-- NORMAL MODE: Full room interface -->
 		<v-container
+			v-else-if="!showDisconnectedOverlay"
 			fluid
 			:class="{
 				'room': true,
 				'fullscreen': store.state.fullscreen,
 				'layout-default': store.state.settings.roomLayout === 'default',
 				'layout-theater': store.state.settings.roomLayout === 'theater',
-				'embed-mode': isEmbedMode,
 			}"
-			v-if="!showDisconnectedOverlay"
 		>
-			
-			<!-- Normal room header -->
-			<div class="room-header" v-if="!store.state.fullscreen && !isEmbedMode">
+			<div class="room-header" v-if="!store.state.fullscreen">
 				<h1 class="room-title">
 					{{
 						store.state.room.title != ""
@@ -25,23 +59,6 @@
 					}}
 				</h1>
 				<ClientSettingsDialog />
-				<div class="grow"><!-- Spacer --></div>
-				<span id="connectStatus">{{ connectionStatus }}</span>
-			</div>
-
-			<!-- Embed mode header -->
-			<div class="room-header embed-header" v-if="!store.state.fullscreen && isEmbedMode">
-				<h1 class="room-title">
-					<a href="https://play.thunderhillcinema.com" target="_blank" class="embed-site-link">
-						{{
-							store.state.room.title != ""
-								? store.state.room.title
-								: store.state.room.isTemporary
-								? $t("room.title-temp")
-								: store.state.room.name
-						}}
-					</a>
-				</h1>
 				<div class="grow"><!-- Spacer --></div>
 				<span id="connectStatus">{{ connectionStatus }}</span>
 			</div>
@@ -56,7 +73,7 @@
 							@ready="onPlayerReady"
 						/>
 						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }"></div>
-						<div class="in-video-chat" v-if="controlsMode === 'in-video' && !isEmbedMode">
+						<div class="in-video-chat" v-if="controlsMode === 'in-video'">
 							<Chat ref="chat" @link-click="setAddPreviewText" />
 						</div>
 						<div class="playback-blocked-prompt" v-if="mediaPlaybackBlocked">
@@ -80,16 +97,16 @@
 				</div>
 				<div
 					class="out-video-chat"
-					v-if="controlsMode === 'outside-video' && !store.state.fullscreen && !isEmbedMode"
+					v-if="controlsMode === 'outside-video' && !store.state.fullscreen"
 				>
 					<Chat ref="chat" @link-click="setAddPreviewText" />
 				</div>
 			</div>
-			<div class="banners" v-if="!isEmbedMode">
+			<div class="banners">
 				<RestoreQueue />
 				<VoteSkip />
 			</div>
-			<div class="under-video-grid" v-if="!isEmbedMode">
+			<div class="under-video-grid">
 				<div class="under-video-tabs">
 					<v-tabs fixed-tabs v-model="queueTab" color="primary">
 						<v-tab>
@@ -981,89 +998,33 @@ $in-video-chat-width-small: 250px;
 	}
 }
 
-/* Embed mode styles */
-.embed-mode {
-	height: 100vh !important;
-	overflow: hidden !important;
+/* Embed container styles - clean, minimal video player only */
+.embed-container {
+	width: 100vw;
+	height: 100vh;
+	background: #000;
+	margin: 0;
+	padding: 0;
 }
 
-.embed-mode .video-container {
-	height: 100vh !important;
-	grid-template-rows: 100vh !important;
-	width: 100% !important;
-	max-width: none !important;
+.embed-container .video-container {
+	width: 100%;
+	height: 100vh;
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: 1fr;
 }
 
-.embed-mode .video-subcontainer {
-	width: 100% !important;
-	height: 100vh !important;
-	justify-self: stretch !important;
+.embed-container .video-subcontainer {
+	width: 100%;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
 }
 
-.embed-mode .player-container {
-	height: 100vh !important;
-	width: 100% !important;
-}
-
-/* Hide UI elements in embed mode but preserve video player controls */
-.embed-mode .banners {
-	display: none !important;
-}
-
-.embed-mode .under-video-grid {
-	display: none !important;
-}
-
-.embed-mode .in-video-chat {
-	display: none !important;
-}
-
-.embed-mode .out-video-chat {
-	display: none !important;
-}
-
-.embed-mode .v-footer {
-	display: none !important;
-}
-
-.embed-mode .v-navigation-drawer {
-	display: none !important;
-}
-
-/* Keep room header but modify it for embed mode */
-.embed-mode .room-header {
-	padding: 8px 16px !important;
-	margin-bottom: 8px !important;
-	background: rgba(0, 0, 0, 0.7) !important;
-}
-
-.embed-mode .room-title {
-	font-size: 16px !important;
-	margin: 0 !important;
-}
-
-/* Embed mode header link styling */
-.embed-site-link {
-	color: #ffffff !important;
-	text-decoration: none !important;
-	font-size: 16px !important;
-	font-weight: 600 !important;
-	display: flex !important;
-	align-items: center !important;
-	gap: 8px !important;
-	transition: opacity 0.2s ease !important;
-}
-
-.embed-site-link:hover {
-	opacity: 0.8 !important;
-	text-decoration: underline !important;
-}
-
-/* Ensure video container takes full screen */
-.embed-mode .v-container {
-	padding: 0 !important;
-	margin: 0 !important;
-	max-width: none !important;
-	height: 100vh !important;
+.embed-container .player-container {
+	width: 100%;
+	flex: 1;
+	position: relative;
 }
 </style>
