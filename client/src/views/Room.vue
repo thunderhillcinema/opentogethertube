@@ -13,6 +13,7 @@
 			v-if="!showDisconnectedOverlay"
 		>
 			
+			<!-- Normal room header -->
 			<div class="room-header" v-if="!store.state.fullscreen && !isEmbedMode">
 				<h1 class="room-title">
 					{{
@@ -24,6 +25,15 @@
 					}}
 				</h1>
 				<ClientSettingsDialog />
+				<div class="grow"><!-- Spacer --></div>
+				<span id="connectStatus">{{ connectionStatus }}</span>
+			</div>
+
+			<!-- Embed mode header -->
+			<div class="room-header embed-header" v-if="!store.state.fullscreen && isEmbedMode">
+				<a href="https://play.thunderhillcinema.com" target="_blank" class="embed-site-link">
+					🎬 Thunderhill Cinema
+				</a>
 				<div class="grow"><!-- Spacer --></div>
 				<span id="connectStatus">{{ connectionStatus }}</span>
 			</div>
@@ -987,11 +997,7 @@ $in-video-chat-width-small: 250px;
 	width: 100% !important;
 }
 
-/* Hide UI elements in embed mode */
-.embed-mode .room-header {
-	display: none !important;
-}
-
+/* Hide UI elements in embed mode but preserve video player controls */
 .embed-mode .banners {
 	display: none !important;
 }
@@ -1012,16 +1018,37 @@ $in-video-chat-width-small: 250px;
 	display: none !important;
 }
 
-.embed-mode .v-app-bar {
-	display: none !important;
-}
-
 .embed-mode .v-navigation-drawer {
 	display: none !important;
 }
 
-.embed-mode .video-controls {
-	background: transparent !important;
+/* Keep room header but modify it for embed mode */
+.embed-mode .room-header {
+	padding: 8px 16px !important;
+	margin-bottom: 8px !important;
+	background: rgba(0, 0, 0, 0.7) !important;
+}
+
+.embed-mode .room-title {
+	font-size: 16px !important;
+	margin: 0 !important;
+}
+
+/* Embed mode header link styling */
+.embed-site-link {
+	color: #ffffff !important;
+	text-decoration: none !important;
+	font-size: 16px !important;
+	font-weight: 600 !important;
+	display: flex !important;
+	align-items: center !important;
+	gap: 8px !important;
+	transition: opacity 0.2s ease !important;
+}
+
+.embed-site-link:hover {
+	opacity: 0.8 !important;
+	text-decoration: underline !important;
 }
 
 /* Ensure video container takes full screen */
