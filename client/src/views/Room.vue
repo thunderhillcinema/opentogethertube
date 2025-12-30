@@ -1018,6 +1018,10 @@ $in-video-chat-width-small: 250px;
 		// Ensure proper touch scrolling is disabled
 		touch-action: none;
 		-webkit-overflow-scrolling: touch;
+		
+		// When embedded in another page, add padding for external UI
+		padding-top: 60px; // Space for external header
+		padding-bottom: 20px; // Space for external controls/content
 	}
 }
 
@@ -1031,7 +1035,7 @@ $in-video-chat-width-small: 250px;
 	padding: 0;
 	
 	@media (max-width: variables.$xs-max) {
-		height: 100dvh;
+		height: calc(100dvh - 80px); // Subtract padding from total height
 		// Ensure content fills mobile viewport properly
 		min-height: 0;
 	}
@@ -1046,7 +1050,7 @@ $in-video-chat-width-small: 250px;
 	padding: 0;
 	
 	@media (max-width: variables.$xs-max) {
-		height: 100dvh;
+		height: calc(100dvh - 80px); // Match video-container height
 		// Use flex layout that properly accommodates grid child
 		min-height: 0;
 		flex: 1;
