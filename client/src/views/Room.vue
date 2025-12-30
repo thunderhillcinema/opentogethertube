@@ -1010,6 +1010,8 @@ $in-video-chat-width-small: 250px;
 	margin: 0;
 	padding: 0;
 	overflow: hidden;
+	display: flex;
+	flex-direction: column;
 	
 	// Mobile viewport handling
 	@media (max-width: variables.$xs-max) {
@@ -1018,27 +1020,18 @@ $in-video-chat-width-small: 250px;
 		// Ensure proper touch scrolling is disabled
 		touch-action: none;
 		-webkit-overflow-scrolling: touch;
-		
-		// When embedded in another page, add balanced padding for external UI
-		padding-top: 80px; // Space for external header + margins
-		padding-bottom: 60px; // Space for external controls + safe area
 	}
 }
 
 .embed-container .video-container {
 	width: 100%;
-	height: 100%;
+	flex: 1;
 	display: grid;
 	grid-template-columns: 1fr;
 	grid-template-rows: 1fr;
 	margin: 0;
 	padding: 0;
-	
-	@media (max-width: variables.$xs-max) {
-		height: 100%; // Fill parent container with padding
-		// Ensure content fills mobile viewport properly
-		min-height: 280px; // Ensure minimum viable space for video + controls
-	}
+	min-height: 0; // Allow flex shrinking
 }
 
 .embed-container .video-subcontainer {
@@ -1048,14 +1041,7 @@ $in-video-chat-width-small: 250px;
 	flex-direction: column;
 	margin: 0;
 	padding: 0;
-	
-	@media (max-width: variables.$xs-max) {
-		height: 100%; // Fill parent container
-		// Use flex layout that properly accommodates grid child
-		min-height: 280px; // Match video-container minimum
-		flex: 1;
-		overflow: hidden;
-	}
+	min-height: 0; // Allow flex shrinking
 }
 
 .embed-container .player-container {
@@ -1064,69 +1050,31 @@ $in-video-chat-width-small: 250px;
 	position: relative;
 	margin: 0;
 	padding: 0;
-	// Ensure video scales properly
 	overflow: hidden;
+	min-height: 0; // Allow flex shrinking
+	display: flex;
+	flex-direction: column;
 	
-	@media (max-width: variables.$xs-max) {
-		// Use CSS Grid for proper space allocation
-		display: grid;
-		grid-template-rows: 1fr auto;
-		height: 100%; // Fill parent container
-		
-		// Ensure video area maintains proper aspect ratio and fits available space
-		> * {
-			grid-row: 1;
-			min-height: 200px; // Reasonable minimum for video visibility
-			overflow: hidden;
-		}
-		
-		// Position video controls in separate grid row
-		.video-controls {
-			grid-row: 2;
-			position: relative;
-			bottom: auto;
-			margin-top: 8px; // Spacing between video and controls
-		}
-		
-		// Fix video element scaling to properly fit constrained area
-		video, iframe {
-			object-fit: contain;
-			width: 100% !important;
-			height: 100% !important;
-			max-width: 100% !important;
-			max-height: 100% !important;
-		}
-		
-		// Ensure any embedded players scale to fit
-		.omniplayer-container {
-			width: 100% !important;
-			height: 100% !important;
-			max-width: 100% !important;
-			max-height: 100% !important;
-		}
+	// Ensure video element fills available space properly
+	> * {
+		flex: 1;
+		min-height: 0;
 	}
 }
 
-// Additional mobile embed mode optimizations
-@media (max-width: variables.$xs-max) {
-	// When in embed mode on mobile, ensure body doesn't scroll
-	body:has(.embed-container) {
-		overflow: hidden;
-		position: fixed;
-		width: 100%;
-		height: 100%;
-	}
+// VideoControls positioning in embed mode
+.embed-container .video-controls {
+	flex-shrink: 0; // Don't shrink controls
+	position: relative;
+	bottom: auto; // Remove any absolute positioning
 	
-	// Mobile-specific video control positioning in embed mode
-	.embed-container .video-controls {
-		&.in-video {
-			// Ensure controls are always visible on mobile for better UX
-			opacity: 0.8;
-			backdrop-filter: blur(4px);
-			
-			&:not(.hide) {
-				opacity: 1;
-			}
+	@media (max-width: variables.$xs-max) {
+		// Ensure controls are visible on mobile
+		opacity: 0.9;
+		backdrop-filter: blur(2px);
+		
+		&:not(.hide) {
+			opacity: 1;
 		}
 	}
 }
