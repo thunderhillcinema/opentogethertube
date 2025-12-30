@@ -1052,13 +1052,18 @@ $in-video-chat-width-small: 250px;
 	padding: 0;
 	overflow: hidden;
 	min-height: 0; // Allow flex shrinking
-	display: flex;
-	flex-direction: column;
 	
-	// Ensure video element fills available space properly
-	> * {
-		flex: 1;
-		min-height: 0;
+	// Ensure OmniPlayer fills the container completely in embed mode
+	.player {
+		width: 100%;
+		height: 100%;
+		
+		@media (max-width: variables.$xs-max) {
+			// Override OmniPlayer mobile restrictions in embed mode
+			max-height: none !important;
+			min-height: 0 !important;
+			aspect-ratio: auto !important;
+		}
 	}
 }
 
