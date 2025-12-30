@@ -1,6 +1,6 @@
-version: "3.7"
 services:
   opentogethertube:
+    platform: linux/amd64
     image: dyc3/opentogethertube:latest
     container_name: opentogethertube
     environment:
@@ -17,7 +17,7 @@ services:
     volumes:
       - ./env:/app/env
     ports:
-      - 8080:8080
+      - 3000:8080
     links:
       - redis_db
       - postgres_db
