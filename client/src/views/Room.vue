@@ -8,10 +8,11 @@
 				'fullscreen': store.state.fullscreen,
 				'layout-default': store.state.settings.roomLayout === 'default',
 				'layout-theater': store.state.settings.roomLayout === 'theater',
+				'embed-mode': isEmbedMode,
 			}"
 			v-if="!showDisconnectedOverlay"
 		>
-			<div class="room-header" v-if="!store.state.fullscreen">
+			<div class="room-header" v-if="!store.state.fullscreen && !isEmbedMode">
 				<h1 class="room-title">
 					{{
 						store.state.room.title != ""
@@ -36,7 +37,7 @@
 							@ready="onPlayerReady"
 						/>
 						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }"></div>
-						<div class="in-video-chat" v-if="controlsMode === 'in-video'">
+						<div class="in-video-chat" v-if="controlsMode === 'in-video' && !isEmbedMode">
 							<Chat ref="chat" @link-click="setAddPreviewText" />
 						</div>
 						<div class="playback-blocked-prompt" v-if="mediaPlaybackBlocked">
@@ -60,16 +61,16 @@
 				</div>
 				<div
 					class="out-video-chat"
-					v-if="controlsMode === 'outside-video' && !store.state.fullscreen"
+					v-if="controlsMode === 'outside-video' && !store.state.fullscreen && !isEmbedMode"
 				>
 					<Chat ref="chat" @link-click="setAddPreviewText" />
 				</div>
 			</div>
-			<div class="banners">
+			<div class="banners" v-if="!isEmbedMode">
 				<RestoreQueue />
 				<VoteSkip />
 			</div>
-			<div class="under-video-grid">
+			<div class="under-video-grid" v-if="!isEmbedMode">
 				<div class="under-video-tabs">
 					<v-tabs fixed-tabs v-model="queueTab" color="primary">
 						<v-tab>
@@ -167,7 +168,7 @@
 				</div>
 			</div>
 		</v-container>
-		<v-footer>
+		<v-footer v-if="!isEmbedMode">
 			<v-container>
 				<v-row class="center-shit">
 					<router-link to="/privacypolicy" v-if="isOfficialSite()">
@@ -268,6 +269,9 @@ export default defineComponent({
 		const { t } = useI18n();
 		const router = useRouter();
 		const route = useRoute();
+
+		// Embed mode detection
+		const isEmbedMode = computed(() => route.query.embed === 'true');
 
 		// video control visibility
 		const controlsVisible = ref(true);
@@ -691,6 +695,7 @@ export default defineComponent({
 			roomapi,
 			granted,
 			isOfficialSite,
+			isEmbedMode,
 
 			controlsVisible,
 			videoControlsHideTimeout,
@@ -948,6 +953,30 @@ $in-video-chat-width-small: 250px;
 
 	@media screen and (max-width: variables.$sm-max) {
 		width: 100%;
+	}
+}
+
+/* Embed mode styles */
+.embed-mode {
+	.video-container {
+		height: 100vh;
+		grid-template-rows: 100vh;
+	}
+
+	.video-subcontainer {
+		width: 100%;
+		height: 100vh;
+	}
+
+	.player-container {
+		height: 100vh;
+	}
+
+	/* Hide any remaining UI elements */
+	.room-header,
+	.banners,
+	.under-video-grid {
+		display: none !important;
 	}
 }
 </style>
