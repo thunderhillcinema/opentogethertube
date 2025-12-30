@@ -12,6 +12,11 @@
 			}"
 			v-if="!showDisconnectedOverlay"
 		>
+			<!-- Embed mode debug indicator -->
+			<div v-if="isEmbedMode" style="position: fixed; top: 0; left: 0; background: red; color: white; padding: 10px; z-index: 9999; font-size: 14px;">
+				🎬 EMBED MODE ACTIVE
+			</div>
+			
 			<div class="room-header" v-if="!store.state.fullscreen && !isEmbedMode">
 				<h1 class="room-title">
 					{{
@@ -271,7 +276,17 @@ export default defineComponent({
 		const route = useRoute();
 
 		// Embed mode detection
-		const isEmbedMode = computed(() => route.query.embed === 'true');
+		const isEmbedMode = computed(() => {
+			const embedValue = route.query.embed;
+			const isEmbed = embedValue === 'true';
+			console.log('🔍 Embed mode debug:', { 
+				queryParam: embedValue, 
+				isEmbed, 
+				fullQuery: route.query,
+				fullPath: route.fullPath 
+			});
+			return isEmbed;
+		});
 
 		// video control visibility
 		const controlsVisible = ref(true);
@@ -958,25 +973,50 @@ $in-video-chat-width-small: 250px;
 
 /* Embed mode styles */
 .embed-mode {
-	.video-container {
-		height: 100vh;
-		grid-template-rows: 100vh;
-	}
+	height: 100vh !important;
+	overflow: hidden !important;
+}
 
-	.video-subcontainer {
-		width: 100%;
-		height: 100vh;
-	}
+.embed-mode .video-container {
+	height: 100vh !important;
+	grid-template-rows: 100vh !important;
+	width: 100% !important;
+	max-width: none !important;
+}
 
-	.player-container {
-		height: 100vh;
-	}
+.embed-mode .video-subcontainer {
+	width: 100% !important;
+	height: 100vh !important;
+	justify-self: stretch !important;
+}
 
-	/* Hide any remaining UI elements */
-	.room-header,
-	.banners,
-	.under-video-grid {
-		display: none !important;
-	}
+.embed-mode .player-container {
+	height: 100vh !important;
+	width: 100% !important;
+}
+
+/* Hide UI elements in embed mode */
+.embed-mode .room-header {
+	display: none !important;
+}
+
+.embed-mode .banners {
+	display: none !important;
+}
+
+.embed-mode .under-video-grid {
+	display: none !important;
+}
+
+.embed-mode .in-video-chat {
+	display: none !important;
+}
+
+.embed-mode .out-video-chat {
+	display: none !important;
+}
+
+.embed-mode .v-footer {
+	display: none !important;
 }
 </style>
