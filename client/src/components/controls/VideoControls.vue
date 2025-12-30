@@ -52,6 +52,7 @@ withDefaults(
 
 <style lang="scss">
 @use "./media-controls.scss";
+@use "../../variables.scss";
 
 $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 
