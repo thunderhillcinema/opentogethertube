@@ -31,9 +31,17 @@
 
 			<!-- Embed mode header -->
 			<div class="room-header embed-header" v-if="!store.state.fullscreen && isEmbedMode">
-				<a href="https://play.thunderhillcinema.com" target="_blank" class="embed-site-link">
-					🎬 Thunderhill Cinema
-				</a>
+				<h1 class="room-title">
+					<a href="https://play.thunderhillcinema.com" target="_blank" class="embed-site-link">
+						{{
+							store.state.room.title != ""
+								? store.state.room.title
+								: store.state.room.isTemporary
+								? $t("room.title-temp")
+								: store.state.room.name
+						}}
+					</a>
+				</h1>
 				<div class="grow"><!-- Spacer --></div>
 				<span id="connectStatus">{{ connectionStatus }}</span>
 			</div>
