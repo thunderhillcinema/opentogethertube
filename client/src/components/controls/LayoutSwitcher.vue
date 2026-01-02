@@ -72,6 +72,15 @@ function rotateRoomLayout() {
 		layouts[(layouts.indexOf(store.state.settings.roomLayout) + 1) % layouts.length];
 	store.commit("settings/UPDATE", { roomLayout: newLayout });
 	layoutTooltip.value = false;
+
+	// Send postMessage to parent window if in embed mode
+	// This allows the embedding page to adjust its layout when theater mode is toggled
+	if (window.parent && window.parent !== window) {
+		window.parent.postMessage({
+			type: "ott-theater-mode",
+			theaterMode: newLayout === RoomLayoutMode.theater
+		}, "*");
+	}
 }
 
 const shortcuts = useRoomKeyboardShortcuts();
