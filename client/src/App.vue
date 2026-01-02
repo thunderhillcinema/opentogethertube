@@ -19,7 +19,11 @@
 				<a v-else class="link-invis" @click="redirectToFullSite" style="cursor: pointer;">OpenTogetherTube</a>
 			</v-app-bar-title>
 			<v-toolbar-items v-if="$vuetify.display.lgAndUp">
-				<v-btn variant="text" to="/rooms">{{ $t("nav.browse") }}</v-btn>
+				<!-- Browse Button - In embed mode, redirect to full site -->
+				<v-btn v-if="isEmbedMode" variant="text" @click="redirectToFullSite">
+					{{ $t("nav.browse") }}
+				</v-btn>
+				<v-btn v-else variant="text" to="/rooms">{{ $t("nav.browse") }}</v-btn>
 				<v-btn v-if="store.state.user" variant="text" to="/my-rooms">{{
 					$t("nav.my-rooms")
 				}}</v-btn>
