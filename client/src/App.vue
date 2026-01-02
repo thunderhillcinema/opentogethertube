@@ -45,7 +45,12 @@
 			</v-toolbar-items>
 			<v-spacer />
 			<v-toolbar-items v-if="$vuetify.display.mdAndUp">
-				<v-menu offset-y>
+				<!-- Create Room Button - In embed mode, redirect to full site -->
+				<v-btn v-if="isEmbedMode" variant="text" @click="redirectToFullSite">
+					<v-icon class="side-pad" :icon="mdiPlusBox" />
+					{{ $t("nav.create.title") }}
+				</v-btn>
+				<v-menu v-else offset-y>
 					<template v-slot:activator="{ props }">
 						<v-btn variant="text" v-bind="props">
 							<v-icon class="side-pad" :icon="mdiPlusBox" />
@@ -59,8 +64,16 @@
 						/>
 					</v-list>
 				</v-menu>
-				<NavUser @login="showLogin = true" @logout="logout" />
-				<LocaleSelector style="margin-top: 5px; width: 100px" />
+				<!-- Login/User Button - In embed mode, redirect to full site -->
+				<v-btn v-if="isEmbedMode" variant="text" @click="redirectToFullSite">
+					{{ store.state.user ? store.state.user.username : $t("nav.login") }}
+				</v-btn>
+				<NavUser v-else @login="showLogin = true" @logout="logout" />
+				<!-- Locale Selector - In embed mode, redirect to full site -->
+				<v-btn v-if="isEmbedMode" variant="text" @click="redirectToFullSite" style="min-width: 48px;">
+					{{ getCurrentLocaleFlag() }}
+				</v-btn>
+				<LocaleSelector v-else style="margin-top: 5px; width: 100px" />
 			</v-toolbar-items>
 		</v-app-bar>
 		<v-navigation-drawer v-model="drawer" temporary>
@@ -199,6 +212,18 @@ const App = defineComponent({
 			window.open('https://opentogethertube.com', '_blank');
 		};
 
+		const getCurrentLocaleFlag = () => {
+			const localeMap: Record<string, string> = {
+				'en': '🇺🇸',
+				'de': '🇩🇪',
+				'fr': '🇫🇷',
+				'ru': '🇷🇺',
+				'es': '🇪🇸',
+				'pt-br': '🇧🇷',
+			};
+			return localeMap[store.state.settings.locale] || '🇺🇸';
+		};
+
 		onMounted(async () => {
 			const router = useRouter();
 
@@ -250,6 +275,7 @@ const App = defineComponent({
 			cancelRoom,
 			createTempRoom,
 			redirectToFullSite,
+			getCurrentLocaleFlag,
 			logoUrl,
 			store,
 			mdiBug,
