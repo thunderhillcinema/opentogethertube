@@ -62,6 +62,7 @@ export interface OttApiResponseGetRoom extends RoomSettings {
 	visibility: Visibility;
 	queueMode: QueueMode;
 	queue: QueueItem[];
+	currentSource: Video | null;
 	hasOwner: boolean;
 	grants: Grants;
 	autoSkipSegmentCategories: Category[];

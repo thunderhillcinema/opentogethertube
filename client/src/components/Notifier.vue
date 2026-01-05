@@ -1,5 +1,11 @@
 <template>
-	<transition-group appear name="toast-list" tag="div" class="toast-list">
+	<transition-group
+		v-if="!shouldHideNotifications"
+		appear
+		name="toast-list"
+		tag="div"
+		class="toast-list"
+	>
 		<div v-for="(t, index) in store.state.toast.notifications" :key="t.id" class="toast-item">
 			<ToastNotification :toast="t" :number="index" />
 		</div>
@@ -17,12 +23,24 @@
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
+import { useRoute } from "vue-router";
 import ToastNotification from "@/components/ToastNotification.vue";
 import { useStore } from "@/store";
 import toast from "@/util/toast";
 
 const store = useStore();
+const route = useRoute();
 toast.setStore(store);
+
+// Detect mobile devices (screen width <= 760px)
+const isMobile = computed(() => window.matchMedia("only screen and (max-width: 760px)").matches);
+
+// Detect embed mode via query parameter
+const isEmbedMode = computed(() => route.query.embed === "true");
+
+// Hide notifications on mobile embed to prevent covering play button
+const shouldHideNotifications = computed(() => isMobile.value && isEmbedMode.value);
 
 function closeAll() {
 	store.commit("toast/CLEAR_ALL_TOASTS");
