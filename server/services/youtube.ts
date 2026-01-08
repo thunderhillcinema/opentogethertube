@@ -470,19 +470,9 @@ export default class YouTubeAdapter extends ServiceAdapter {
 				},
 			});
 			const results: Video[] = [];
-			let foundLivestream = false;
 			for (const item of res.data.items) {
-				if (item.snippet && item.snippet.liveBroadcastContent !== "none") {
-					log.debug(
-						`found liveBroadcastContent=${item.snippet.liveBroadcastContent}, skipping`
-					);
-					foundLivestream = true;
-					continue;
-				}
+				// Accept all videos including live streams, upcoming, and archived broadcasts
 				results.push(this.parseVideoItem(item));
-			}
-			if (results.length === 0 && foundLivestream) {
-				throw new UnsupportedVideoType("livestream");
 			}
 			try {
 				await storage.updateManyVideoInfo(results);
@@ -546,7 +536,7 @@ export default class YouTubeAdapter extends ServiceAdapter {
 		const fields: string[] = ["items("];
 		fields.push("id");
 		if (needsSnippet) {
-			// Only fields actually used by parseVideoItem() and livestream check
+			// Fields used by parseVideoItem()
 			fields.push(
 				",snippet(title,description,thumbnails(default(url),medium(url)),liveBroadcastContent)"
 			);
