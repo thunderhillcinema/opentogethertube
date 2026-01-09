@@ -1,6 +1,7 @@
 <template>
 	<v-app id="app">
 		<v-app-bar
+			v-if="!isProjectionMode"
 			app
 			:density="$vuetify.display.mdAndUp ? 'default' : 'compact'"
 			:scroll-behavior="fullscreen ? 'inverted hide' : ' '"
@@ -80,7 +81,7 @@
 				<LocaleSelector v-else style="margin-top: 5px; width: 100px" />
 			</v-toolbar-items>
 		</v-app-bar>
-		<v-navigation-drawer v-if="!isEmbedMode" v-model="drawer" temporary>
+		<v-navigation-drawer v-if="!isEmbedMode && !isProjectionMode" v-model="drawer" temporary>
 			<v-list nav dense>
 				<v-list-item to="/">
 					{{ $t("nav.home") }}
@@ -192,6 +193,9 @@ const App = defineComponent({
 		// Embed mode detection
 		const isEmbedMode = computed(() => route.query.embed === 'true');
 
+		// Projection booth mode detection
+		const isProjectionMode = computed(() => route.query.projection === 'true');
+
 		const logout = async () => {
 			const res = await API.post("/user/logout");
 			if (res.data.success) {
@@ -274,6 +278,7 @@ const App = defineComponent({
 			drawer,
 			fullscreen,
 			isEmbedMode,
+			isProjectionMode,
 			logout,
 			setLocale,
 			cancelRoom,

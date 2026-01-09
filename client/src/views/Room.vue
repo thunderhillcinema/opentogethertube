@@ -14,7 +14,7 @@
 							@paused="onPlaybackChange(false)"
 							@ready="onPlayerReady"
 						/>
-						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }" @click="togglePlayback"></div>
+						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }" @click="shouldShowControls ? togglePlayback() : null"></div>
 						<div class="playback-blocked-prompt" v-if="mediaPlaybackBlocked">
 							<v-btn
 								:prepend-icon="mdiPlay"
@@ -27,6 +27,7 @@
 						</div>
 					</div>
 					<VideoControls
+						v-if="shouldShowControls"
 						:slider-position="sliderPosition"
 						:true-position="truePosition"
 						:controls-visible="controlsVisible"
@@ -36,7 +37,7 @@
 				</div>
 			</div>
 		</div>
-		
+
 		<!-- NORMAL MODE: Full room interface -->
 		<v-container
 			v-else-if="!showDisconnectedOverlay"
@@ -72,7 +73,7 @@
 							@paused="onPlaybackChange(false)"
 							@ready="onPlayerReady"
 						/>
-						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }" @click="togglePlayback"></div>
+						<div id="mouse-event-swallower" :class="{ hide: controlsVisible }" @click="shouldShowControls ? togglePlayback() : null"></div>
 						<div class="in-video-chat" v-if="controlsMode === 'in-video'">
 							<Chat ref="chat" @link-click="setAddPreviewText" />
 						</div>
@@ -88,6 +89,7 @@
 						</div>
 					</div>
 					<VideoControls
+						v-if="shouldShowControls"
 						:slider-position="sliderPosition"
 						:true-position="truePosition"
 						:controls-visible="controlsVisible"
@@ -315,6 +317,26 @@ export default defineComponent({
 			return isEmbed;
 		});
 
+		// Projection booth mode detection
+		const isProjectionMode = computed(() => {
+			const isProjection = route.query.projection === 'true';
+			if (isProjection) {
+				console.log('🎬 Projection booth mode activated');
+			}
+			return isProjection;
+		});
+
+		// Projectionist status (for projection booth mode)
+		const isProjectionist = ref(false);
+
+		// Compute whether controls should be shown
+		const shouldShowControls = computed(() => {
+			if (!isProjectionMode.value) {
+				return true; // Normal mode - always show controls
+			}
+			return isProjectionist.value; // Projection mode - only show for projectionist
+		});
+
 		// video control visibility
 		const controlsVisible = ref(true);
 		const videoControlsHideTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -387,6 +409,27 @@ export default defineComponent({
 
 		onMounted(() => {
 			iTimestampUpdater.value = setInterval(timestampUpdate, 250);
+
+			// Listen for projectionist status from parent frame
+			if (isProjectionMode.value) {
+				const handleParentMessage = (event: MessageEvent) => {
+					// Accept messages from any origin for now
+					// TODO: Add origin validation in production
+					if (event.data && event.data.type === 'ott-projectionist-status') {
+						isProjectionist.value = event.data.isProjectionist === true;
+						console.log('🎬 Projectionist status updated:', isProjectionist.value);
+					}
+				};
+
+				window.addEventListener('message', handleParentMessage);
+
+				// Request initial status from parent
+				if (window.parent && window.parent !== window) {
+					window.parent.postMessage({
+						type: 'ott-request-projectionist-status'
+					}, '*');
+				}
+			}
 		});
 
 		onUnmounted(() => {
@@ -738,6 +781,8 @@ export default defineComponent({
 			granted,
 			isOfficialSite,
 			isEmbedMode,
+			isProjectionMode,
+			shouldShowControls,
 
 			controlsVisible,
 			videoControlsHideTimeout,
