@@ -80,7 +80,7 @@
 				<LocaleSelector v-else style="margin-top: 5px; width: 100px" />
 			</v-toolbar-items>
 		</v-app-bar>
-		<v-navigation-drawer v-model="drawer" temporary :touchless="isEmbedMode">
+		<v-navigation-drawer v-if="!isEmbedMode" v-model="drawer" temporary>
 			<v-list nav dense>
 				<v-list-item to="/">
 					{{ $t("nav.home") }}
