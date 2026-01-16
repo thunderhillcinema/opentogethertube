@@ -39,8 +39,13 @@ const isMobile = computed(() => window.matchMedia("only screen and (max-width: 7
 // Detect embed mode via query parameter
 const isEmbedMode = computed(() => route.query.embed === "true");
 
-// Hide notifications on mobile embed to prevent covering play button
-const shouldHideNotifications = computed(() => isMobile.value && isEmbedMode.value);
+// Detect projection mode via query parameter
+const isProjectionMode = computed(() => route.query.projection === "true");
+
+// Hide notifications on mobile embed OR projection mode
+const shouldHideNotifications = computed(() =>
+	(isMobile.value && isEmbedMode.value) || isProjectionMode.value
+);
 
 function closeAll() {
 	store.commit("toast/CLEAR_ALL_TOASTS");

@@ -4,7 +4,7 @@
 		
 		<!-- EMBED MODE: Minimal video player only -->
 		<div v-if="isEmbedMode && !showDisconnectedOverlay" class="embed-container">
-			<div class="video-container">
+			<div class="video-container" :class="{ 'projection-mode': isProjectionMode }">
 				<div class="video-subcontainer">
 					<div class="player-container" ref="playerContainer">
 						<OmniPlayer
@@ -63,7 +63,7 @@
 				<div class="grow"><!-- Spacer --></div>
 				<span id="connectStatus">{{ connectionStatus }}</span>
 			</div>
-			<div class="video-container">
+			<div class="video-container" :class="{ 'projection-mode': isProjectionMode }">
 				<div class="video-subcontainer">
 					<div class="player-container" ref="playerContainer">
 						<OmniPlayer
@@ -1153,6 +1153,33 @@ $in-video-chat-width-small: 250px;
 			max-height: 100% !important;
 		}
 	}
+}
+
+// Projection booth mode - minimal single-column layout
+.video-container.projection-mode {
+	display: grid;
+	grid-template-columns: 1fr;  // Single column - no sidebar
+	grid-template-rows: 1fr;
+	overflow: hidden;  // Prevent scrollbars
+	margin: 0;
+	padding: 0;
+}
+
+.projection-mode .video-subcontainer {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+}
+
+.projection-mode .player-container {
+	width: 100%;
+	flex: 1;
+	position: relative;
+	overflow: hidden;
 }
 
 // Additional mobile embed mode optimizations
