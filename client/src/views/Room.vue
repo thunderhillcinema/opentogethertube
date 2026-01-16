@@ -1055,7 +1055,17 @@ $in-video-chat-width-small: 250px;
 	margin: 0;
 	padding: 0;
 	overflow: hidden;
-	
+
+	// Explicitly hide any scrollbar elements
+	scrollbar-width: none;  // Firefox
+	-ms-overflow-style: none;  // IE/Edge
+
+	&::-webkit-scrollbar {
+		display: none;  // Chrome/Safari
+		width: 0;
+		height: 0;
+	}
+
 	// Mobile viewport handling
 	@media (max-width: variables.$xs-max) {
 		// Use dynamic viewport height for mobile browsers
@@ -1078,7 +1088,17 @@ $in-video-chat-width-small: 250px;
 	grid-template-rows: 1fr;
 	margin: 0;
 	padding: 0;
-	
+	overflow: hidden;
+
+	// Ensure no scrollbar gutter
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+		width: 0;
+	}
+
 	@media (max-width: variables.$xs-max) {
 		height: 100%; // Fill parent container with padding
 		// Ensure content fills mobile viewport properly
@@ -1093,7 +1113,14 @@ $in-video-chat-width-small: 250px;
 	flex-direction: column;
 	margin: 0;
 	padding: 0;
-	
+	overflow: hidden;
+
+	// Ensure no scrollbar appearance
+	scrollbar-width: none;
+	&::-webkit-scrollbar {
+		display: none;
+	}
+
 	@media (max-width: variables.$xs-max) {
 		height: 100%; // Fill parent container
 		// Use flex layout that properly accommodates grid child
