@@ -33,6 +33,8 @@
 						:controls-visible="controlsVisible"
 						:key="currentSource?.id"
 						:mode="controlsMode"
+						:is-projection-mode="isProjectionMode"
+						:is-projectionist="isProjectionist"
 					/>
 				</div>
 			</div>
@@ -95,6 +97,8 @@
 						:controls-visible="controlsVisible"
 						:key="currentSource?.id"
 						:mode="controlsMode"
+						:is-projection-mode="isProjectionMode"
+						:is-projectionist="isProjectionist"
 					/>
 				</div>
 				<div
@@ -330,11 +334,18 @@ export default defineComponent({
 		const isProjectionist = ref(false);
 
 		// Compute whether controls should be shown
+		// In projection mode, always show controls but pass projectionist status
+		// to allow selective visibility of individual controls
 		const shouldShowControls = computed(() => {
+			return true; // Always show controls container
+		});
+
+		// Compute whether user has full control permissions
+		const hasFullControlAccess = computed(() => {
 			if (!isProjectionMode.value) {
-				return true; // Normal mode - always show controls
+				return true; // Normal mode - full access
 			}
-			return isProjectionist.value; // Projection mode - only show for projectionist
+			return isProjectionist.value; // Projection mode - only projectionist has full access
 		});
 
 		// video control visibility
@@ -1055,6 +1066,9 @@ $in-video-chat-width-small: 250px;
 	margin: 0;
 	padding: 0;
 	overflow: hidden;
+
+	// Force Vuetify scrollbar offset to 0 in embed mode to prevent gray bar
+	--v-scrollbar-offset: 0px !important;
 
 	// Explicitly hide any scrollbar elements
 	scrollbar-width: none;  // Firefox

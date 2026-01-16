@@ -8,24 +8,33 @@
 				'hide': !controlsVisible,
 			}"
 		>
-			<VideoProgressSlider :current-position="sliderPosition" />
+			<VideoProgressSlider v-if="showAdvancedControls" :current-position="sliderPosition" />
 			<div class="controls-row2">
-				<BasicControls :current-position="truePosition" />
+				<!-- Playback controls - Projectionist only -->
+				<BasicControls v-if="showAdvancedControls" :current-position="truePosition" />
+				<!-- Volume - Always visible -->
 				<!-- eslint-disable-next-line vue/no-v-model-argument -->
 				<VolumeControl />
+				<!-- Timestamp - Always visible for playtime info -->
 				<TimestampDisplay :current-position="truePosition" data-cy="timestamp-display" />
 				<div class="grow"><!-- Spacer --></div>
+				<!-- Captions - Always visible -->
 				<ClosedCaptionsSwitcher />
-				<PlaybackRateSwitcher />
-				<VideoSettings />
+				<!-- Playback speed - Projectionist only -->
+				<PlaybackRateSwitcher v-if="showAdvancedControls" />
+				<!-- Video settings - Projectionist only -->
+				<VideoSettings v-if="showAdvancedControls" />
+				<!-- Fullscreen/PiP - Always visible -->
 				<PictureInPictureButton />
-				<LayoutSwitcher />
+				<!-- Layout switcher - Projectionist only -->
+				<LayoutSwitcher v-if="showAdvancedControls" />
 			</div>
 		</div>
 	</div>
 </template>
 
 <script lang="ts" setup>
+import { computed } from "vue";
 import BasicControls from "./BasicControls.vue";
 import ClosedCaptionsSwitcher from "./ClosedCaptionsSwitcher.vue";
 import LayoutSwitcher from "./LayoutSwitcher.vue";
@@ -36,18 +45,32 @@ import PlaybackRateSwitcher from "./PlaybackRateSwitcher.vue";
 import VideoSettings from "./VideoSettings.vue";
 import PictureInPictureButton from "./PictureInPictureButton.vue";
 
-withDefaults(
+const props = withDefaults(
 	defineProps<{
 		sliderPosition: number;
 		truePosition: number;
 		controlsVisible: boolean;
 		mode: "in-video" | "outside-video";
+		isProjectionMode?: boolean;
+		isProjectionist?: boolean;
 	}>(),
 	{
 		controlsVisible: false,
 		mode: "in-video",
+		isProjectionMode: false,
+		isProjectionist: false,
 	}
 );
+
+// Determine if audience-restricted controls should be shown
+const showAdvancedControls = computed(() => {
+	// If not in projection mode, show everything
+	if (!props.isProjectionMode) {
+		return true;
+	}
+	// In projection mode, only projectionist sees advanced controls
+	return props.isProjectionist === true;
+});
 </script>
 
 <style lang="scss">
