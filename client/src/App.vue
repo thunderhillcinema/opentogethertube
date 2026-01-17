@@ -247,6 +247,12 @@ const App = defineComponent({
 				}
 			});
 
+			// Hide scrollbars in projection/embed mode
+			if (isProjectionMode.value || isEmbedMode.value) {
+				document.querySelector("html")?.classList.add("scrollbarBeGone");
+				document.querySelector("body")?.classList.add("scrollbarBeGone");
+			}
+
 			document.addEventListener("fullscreenchange", () => {
 				if (document.fullscreenElement) {
 					store.commit("SET_FULLSCREEN", true);
@@ -335,7 +341,32 @@ export default App;
 
 	&::-webkit-scrollbar {
 		display: none;
+		width: 0 !important;
+		height: 0 !important;
 	}
+
+	// Also hide scrollbar gutter
+	scrollbar-gutter: stable both-edges;
+	overflow: overlay;
+}
+
+// Additional global scrollbar hiding for Vuetify containers in projection/embed mode
+// This targets the v-application wrapper that Vuetify creates
+.v-application {
+	&::-webkit-scrollbar {
+		display: none !important;
+		width: 0 !important;
+	}
+	scrollbar-width: none !important;
+	-ms-overflow-style: none !important;
+}
+
+.v-main {
+	&::-webkit-scrollbar {
+		display: none !important;
+		width: 0 !important;
+	}
+	scrollbar-width: none !important;
 }
 
 .overlay-loading-create-room {
