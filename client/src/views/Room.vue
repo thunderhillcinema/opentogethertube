@@ -331,8 +331,9 @@ export default defineComponent({
 		});
 
 		// Projectionist status (for projection booth mode)
-		// Use ref directly - Vue automatically tracks ref changes in props
-		const isProjectionist = ref(false);
+		// Use internal ref that gets updated, wrapped in computed for reactivity
+		const isProjectionistValue = ref(false);
+		const isProjectionist = computed(() => isProjectionistValue.value);
 
 		// Compute whether controls should be shown
 		// In projection mode, always show controls but pass projectionist status
@@ -346,7 +347,7 @@ export default defineComponent({
 			if (!isProjectionMode.value) {
 				return true; // Normal mode - full access
 			}
-			return isProjectionist.value; // Projection mode - only projectionist has full access
+			return isProjectionistValue.value; // Projection mode - only projectionist has full access
 		});
 
 		// video control visibility
@@ -428,8 +429,11 @@ export default defineComponent({
 					// Accept messages from any origin for now
 					// TODO: Add origin validation in production
 					if (event.data && event.data.type === 'ott-projectionist-status') {
-						isProjectionist.value = event.data.isProjectionist === true;
-						console.log('🎬 Projectionist status updated:', isProjectionist.value);
+						const newStatus = event.data.isProjectionist === true;
+						console.log('🎬 Received projectionist message:', event.data, 'setting to:', newStatus);
+						isProjectionistValue.value = newStatus;
+						console.log('🎬 Projectionist ref updated to:', isProjectionistValue.value);
+						console.log('🎬 Computed isProjectionist now returns:', isProjectionist.value);
 					}
 				};
 
