@@ -798,6 +798,7 @@ export default defineComponent({
 			isOfficialSite,
 			isEmbedMode,
 			isProjectionMode,
+			isProjectionist,
 			shouldShowControls,
 
 			controlsVisible,
