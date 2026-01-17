@@ -1061,6 +1061,18 @@ $in-video-chat-width-small: 250px;
 	}
 }
 
+/* Global scrollbar hiding for projection/embed modes */
+html, body {
+	scrollbar-width: none !important;  // Firefox
+	-ms-overflow-style: none !important;  // IE/Edge
+
+	&::-webkit-scrollbar {
+		display: none !important;  // Chrome/Safari
+		width: 0 !important;
+		height: 0 !important;
+	}
+}
+
 /* Embed container styles - clean, minimal video player only */
 .embed-container {
 	position: fixed;
