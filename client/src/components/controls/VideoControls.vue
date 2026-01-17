@@ -64,11 +64,12 @@ const props = withDefaults(
 
 // Determine if audience-restricted controls should be shown
 const showAdvancedControls = computed(() => {
-	console.log('[VideoControls] Computing showAdvancedControls:', {
-		isProjectionMode: props.isProjectionMode,
-		isProjectionist: props.isProjectionist,
-		result: !props.isProjectionMode ? true : props.isProjectionist === true
-	});
+	const result = !props.isProjectionMode ? true : props.isProjectionist === true;
+	console.log('[VideoControls] Computing showAdvancedControls:',
+		'isProjectionMode=', props.isProjectionMode,
+		'isProjectionist=', props.isProjectionist,
+		'result=', result
+	);
 
 	// If not in projection mode, show everything
 	if (!props.isProjectionMode) {
