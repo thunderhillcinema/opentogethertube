@@ -24,7 +24,9 @@
 				<PlaybackRateSwitcher v-if="showAdvancedControls" />
 				<!-- Video settings - Projectionist only -->
 				<VideoSettings v-if="showAdvancedControls" />
-				<!-- Fullscreen/PiP - Always visible -->
+				<!-- Fullscreen - Always visible -->
+				<FullscreenButton />
+				<!-- PiP - Always visible -->
 				<PictureInPictureButton />
 				<!-- Layout switcher - Projectionist only -->
 				<LayoutSwitcher v-if="showAdvancedControls" />
@@ -44,6 +46,7 @@ import VolumeControl from "./VolumeControl.vue";
 import PlaybackRateSwitcher from "./PlaybackRateSwitcher.vue";
 import VideoSettings from "./VideoSettings.vue";
 import PictureInPictureButton from "./PictureInPictureButton.vue";
+import FullscreenButton from "./FullscreenButton.vue";
 
 const props = withDefaults(
 	defineProps<{
