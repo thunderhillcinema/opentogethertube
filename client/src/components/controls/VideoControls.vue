@@ -34,7 +34,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import BasicControls from "./BasicControls.vue";
 import ClosedCaptionsSwitcher from "./ClosedCaptionsSwitcher.vue";
 import LayoutSwitcher from "./LayoutSwitcher.vue";
@@ -64,12 +64,27 @@ const props = withDefaults(
 
 // Determine if audience-restricted controls should be shown
 const showAdvancedControls = computed(() => {
+	console.log('[VideoControls] Computing showAdvancedControls:', {
+		isProjectionMode: props.isProjectionMode,
+		isProjectionist: props.isProjectionist,
+		result: !props.isProjectionMode ? true : props.isProjectionist === true
+	});
+
 	// If not in projection mode, show everything
 	if (!props.isProjectionMode) {
 		return true;
 	}
 	// In projection mode, only projectionist sees advanced controls
 	return props.isProjectionist === true;
+});
+
+// Watch for prop changes to verify reactivity
+watch(() => props.isProjectionist, (newVal, oldVal) => {
+	console.log('[VideoControls] isProjectionist changed:', { oldVal, newVal });
+});
+
+watch(() => props.isProjectionMode, (newVal, oldVal) => {
+	console.log('[VideoControls] isProjectionMode changed:', { oldVal, newVal });
 });
 </script>
 
