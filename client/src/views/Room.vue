@@ -1,9 +1,23 @@
 <template>
 	<div>
 		<!-- HACK: For some reason, safari really doesn't like typescript enums. As a result, we are forced to not use the enums, and use their literal values instead. -->
-		
+
+		<!-- CONTROLS-ONLY MODE: Just the controls for separate iframe -->
+		<div v-if="isControlsOnlyMode && !showDisconnectedOverlay" class="controls-only-container">
+			<VideoControls
+				v-if="shouldShowControls"
+				:slider-position="sliderPosition"
+				:true-position="truePosition"
+				:controls-visible="true"
+				:key="currentSource?.id"
+				mode="outside-video"
+				:is-projection-mode="isProjectionMode"
+				:is-projectionist="isProjectionist"
+			/>
+		</div>
+
 		<!-- EMBED MODE: Minimal video player only -->
-		<div v-if="isEmbedMode && !showDisconnectedOverlay" class="embed-container">
+		<div v-else-if="isEmbedMode && !showDisconnectedOverlay" class="embed-container">
 			<div class="video-container" :class="{ 'projection-mode': isProjectionMode }">
 				<div class="video-subcontainer">
 					<div class="player-container" ref="playerContainer">
@@ -340,6 +354,15 @@ export default defineComponent({
 				console.log('🎬 Projection booth mode activated');
 			}
 			return isProjection;
+		});
+
+		// Controls-only mode detection (for separate controls iframe)
+		const isControlsOnlyMode = computed(() => {
+			const isControlsOnly = route.query.controlsonly === 'true';
+			if (isControlsOnly) {
+				console.log('🎮 Controls-only mode activated');
+			}
+			return isControlsOnly;
 		});
 
 		// Projectionist status (for projection booth mode)
@@ -811,6 +834,7 @@ export default defineComponent({
 			isEmbedMode,
 			isProjectionMode,
 			isProjectionist,
+			isControlsOnlyMode,
 			shouldShowControls,
 
 			controlsVisible,
@@ -867,6 +891,15 @@ $video-player-max-height: 75vh;
 $video-player-max-height-theater: 90vh;
 $in-video-chat-width: 400px;
 $in-video-chat-width-small: 250px;
+
+// Controls-only mode container (for separate controls iframe)
+.controls-only-container {
+	width: 100%;
+	min-height: 120px;
+	display: flex;
+	align-items: center;
+	background: transparent;
+}
 
 .video-container {
 	display: grid;

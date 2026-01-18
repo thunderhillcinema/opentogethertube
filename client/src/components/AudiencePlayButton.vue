@@ -13,7 +13,7 @@
 					class="play-button"
 					:aria-label="$t('common.play')"
 				>
-					<v-icon :icon="mdiPlay" size="64" />
+					<v-icon :icon="mdiPlay" :size="iconSize" />
 				</v-btn>
 				<div class="play-hint">Tap to Play</div>
 			</div>
@@ -27,6 +27,7 @@ import { mdiPlay } from "@mdi/js";
 import { useStore } from "@/store";
 import { useConnection } from "@/plugins/connection";
 import { useRoomApi } from "@/util/roomapi";
+import { useDisplay } from "vuetify";
 
 const props = withDefaults(
 	defineProps<{
@@ -41,6 +42,10 @@ const props = withDefaults(
 
 const store = useStore();
 const roomapi = useRoomApi(useConnection());
+const { mobile } = useDisplay();
+
+// Responsive icon size
+const iconSize = computed(() => mobile.value ? 48 : 64);
 
 // Cooldown state - prevents button from appearing immediately after projectionist stops video
 const isInCooldown = ref(false);
@@ -135,6 +140,12 @@ function handlePlayClick() {
 			background: rgba(255, 255, 255, 0.95) !important;
 			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 			transition: all 0.3s ease;
+
+			// Smaller size on mobile
+			@media (max-width: 760px) {
+				width: 80px !important;
+				height: 80px !important;
+			}
 
 			&:hover {
 				transform: scale(1.1);
