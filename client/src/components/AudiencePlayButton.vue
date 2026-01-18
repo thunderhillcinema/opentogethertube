@@ -22,7 +22,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed } from "vue";
+import { computed, ref, watch, onUnmounted } from "vue";
 import { mdiPlay } from "@mdi/js";
 import { useStore } from "@/store";
 import { useConnection } from "@/plugins/connection";
@@ -42,18 +42,59 @@ const props = withDefaults(
 const store = useStore();
 const roomapi = useRoomApi(useConnection());
 
-// Show button only for audience members in projection mode when video is not playing
+// Cooldown state - prevents button from appearing immediately after projectionist stops video
+const isInCooldown = ref(false);
+const cooldownTimer = ref<ReturnType<typeof setTimeout> | null>(null);
+const COOLDOWN_DURATION_MS = 10000; // 10 seconds
+
+// Watch for video playback state changes
+watch(
+	() => store.state.room.isPlaying,
+	(isPlaying, wasPlaying) => {
+		// When video stops (transitions from playing to not playing)
+		if (wasPlaying && !isPlaying && props.isProjectionMode && !props.isProjectionist) {
+			console.log('[AudiencePlayButton] Video stopped, starting 10 second cooldown');
+
+			// Start cooldown
+			isInCooldown.value = true;
+
+			// Clear any existing timer
+			if (cooldownTimer.value) {
+				clearTimeout(cooldownTimer.value);
+			}
+
+			// Set timer to end cooldown after 10 seconds
+			cooldownTimer.value = setTimeout(() => {
+				console.log('[AudiencePlayButton] Cooldown period ended, button can appear');
+				isInCooldown.value = false;
+				cooldownTimer.value = null;
+			}, COOLDOWN_DURATION_MS);
+		}
+	}
+);
+
+// Clean up timer when component unmounts
+onUnmounted(() => {
+	if (cooldownTimer.value) {
+		clearTimeout(cooldownTimer.value);
+		cooldownTimer.value = null;
+	}
+});
+
+// Show button only for audience members in projection mode when video is not playing AND not in cooldown
 const shouldShowButton = computed(() => {
 	const result =
 		props.isProjectionMode &&
 		!props.isProjectionist &&
-		!store.state.room.isPlaying;
+		!store.state.room.isPlaying &&
+		!isInCooldown.value;
 
 	if (props.isProjectionMode) {
 		console.log('[AudiencePlayButton] Visibility check:',
 			'isProjectionMode=', props.isProjectionMode,
 			'isProjectionist=', props.isProjectionist,
 			'isPlaying=', store.state.room.isPlaying,
+			'isInCooldown=', isInCooldown.value,
 			'shouldShow=', result
 		);
 	}
