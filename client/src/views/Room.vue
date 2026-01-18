@@ -935,10 +935,11 @@ $in-video-chat-width-small: 250px;
 // Controls-only mode container (for separate controls iframe)
 .controls-only-container {
 	width: 100%;
-	min-height: 120px;
+	min-height: 80px;
 	display: flex;
 	align-items: center;
 	background: transparent;
+	overflow: hidden; // Hide any overflow content
 }
 
 .video-container {

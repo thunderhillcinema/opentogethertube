@@ -1,5 +1,5 @@
 <template>
-	<div class="video-controls-wrapper">
+	<div class="video-controls-wrapper" :class="{ 'mobile-portrait-controls': isMobilePortraitControls }">
 		<div
 			:class="{
 				'video-controls': true,
@@ -18,16 +18,16 @@
 				<!-- Timestamp - Always visible for playtime info -->
 				<TimestampDisplay :current-position="truePosition" data-cy="timestamp-display" />
 				<div class="grow"><!-- Spacer --></div>
-				<!-- Captions - Always visible -->
-				<ClosedCaptionsSwitcher />
+				<!-- Captions - Hidden on mobile portrait controls-only -->
+				<ClosedCaptionsSwitcher v-if="!isMobilePortraitControls" />
 				<!-- Playback speed - Projectionist only -->
 				<PlaybackRateSwitcher v-if="showAdvancedControls" />
 				<!-- Video settings - Projectionist only -->
 				<VideoSettings v-if="showAdvancedControls" />
 				<!-- Fullscreen - Always visible -->
 				<FullscreenButton />
-				<!-- PiP - Always visible -->
-				<PictureInPictureButton />
+				<!-- PiP - Hidden on mobile portrait controls-only -->
+				<PictureInPictureButton v-if="!isMobilePortraitControls" />
 				<!-- Layout switcher - Projectionist only -->
 				<LayoutSwitcher v-if="showAdvancedControls" />
 			</div>
@@ -36,7 +36,7 @@
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from "vue";
+import { computed, watch, ref, onMounted } from "vue";
 import BasicControls from "./BasicControls.vue";
 import ClosedCaptionsSwitcher from "./ClosedCaptionsSwitcher.vue";
 import LayoutSwitcher from "./LayoutSwitcher.vue";
@@ -65,6 +65,20 @@ const props = withDefaults(
 	}
 );
 
+// Reactive state for mobile portrait detection
+const isMobilePortrait = ref(false);
+
+function updateMobilePortraitState() {
+	const isMobile = window.matchMedia('(max-width: 760px)').matches;
+	const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+	isMobilePortrait.value = isMobile && isPortrait;
+}
+
+// Detect if this is mobile portrait controls-only mode (for compact layout)
+const isMobilePortraitControls = computed(() => {
+	return props.mode === 'outside-video' && isMobilePortrait.value && props.isProjectionMode && !props.isProjectionist;
+});
+
 // Determine if audience-restricted controls should be shown
 const showAdvancedControls = computed(() => {
 	const result = !props.isProjectionMode ? true : props.isProjectionist === true;
@@ -89,6 +103,16 @@ watch(() => props.isProjectionist, (newVal, oldVal) => {
 
 watch(() => props.isProjectionMode, (newVal, oldVal) => {
 	console.log('[VideoControls] isProjectionMode changed:', { oldVal, newVal });
+});
+
+onMounted(() => {
+	// Initialize mobile portrait state
+	updateMobilePortraitState();
+
+	// Watch for orientation and resize changes
+	window.addEventListener('resize', updateMobilePortraitState);
+	const orientationMQ = window.matchMedia('(orientation: portrait)');
+	orientationMQ.addEventListener('change', updateMobilePortraitState);
 });
 </script>
 
@@ -175,6 +199,18 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 				border-radius: 3px;
 			}
 		}
+	}
+}
+
+// Mobile portrait controls-only mode: compact layout
+.mobile-portrait-controls {
+	.video-controls {
+		min-height: 60px !important;
+		padding: 8px 12px !important;
+	}
+
+	.controls-row2 {
+		gap: 12px;
 	}
 }
 </style>
