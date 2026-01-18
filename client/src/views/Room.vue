@@ -374,10 +374,39 @@ export default defineComponent({
 		const isMobilePortrait = ref(false);
 		const isInFullscreen = ref(false);
 
+		// Check if mobile=check parameter is present (means parent wants us to verify mobile status)
+		const shouldCheckMobile = computed(() => {
+			return route.query.mobile === 'check';
+		});
+
+		// More reliable mobile detection using user agent AND screen size
+		function isTrulyMobile() {
+			// Check user agent for mobile devices
+			const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+			const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+
+			// Check screen size
+			const isMobileScreen = window.matchMedia('(max-width: 760px)').matches;
+
+			// If mobile=check parameter is present, require BOTH user agent AND screen size to match
+			// Otherwise just use screen size (for desktop responsive design mode testing)
+			if (shouldCheckMobile.value) {
+				console.log('🔍 Mobile check:', {isMobileUA, isMobileScreen, userAgent: userAgent.substring(0, 50)});
+				return isMobileUA && isMobileScreen;
+			}
+
+			// Fallback: just use screen size
+			return isMobileScreen;
+		}
+
 		function updateMobilePortraitState() {
-			const isMobile = window.matchMedia('(max-width: 760px)').matches;
+			const isMobile = isTrulyMobile();
 			const isPortrait = window.matchMedia('(orientation: portrait)').matches;
 			isMobilePortrait.value = isMobile && isPortrait;
+
+			if (shouldCheckMobile.value) {
+				console.log('📱 Mobile portrait state updated:', {isMobile, isPortrait, isMobilePortrait: isMobilePortrait.value});
+			}
 		}
 
 		function updateFullscreenState() {
