@@ -388,11 +388,18 @@ export default defineComponent({
 			// Check screen size
 			const isMobileScreen = window.matchMedia('(max-width: 760px)').matches;
 
-			// If mobile=check parameter is present, require BOTH user agent AND screen size to match
-			// Otherwise just use screen size (for desktop responsive design mode testing)
+			// Check for touch capability
+			const isTouchDevice = (
+				'ontouchstart' in window ||
+				navigator.maxTouchPoints > 0 ||
+				(navigator as any).msMaxTouchPoints > 0
+			);
+
+			// If mobile=check parameter is present, require mobile user agent AND screen size AND touch capability
+			// This prevents desktop browsers with small windows from triggering mobile behavior
 			if (shouldCheckMobile.value) {
-				console.log('🔍 Mobile check:', {isMobileUA, isMobileScreen, userAgent: userAgent.substring(0, 50)});
-				return isMobileUA && isMobileScreen;
+				console.log('🔍 Mobile check:', {isMobileUA, isMobileScreen, isTouchDevice, userAgent: userAgent.substring(0, 50)});
+				return isMobileUA && isMobileScreen && isTouchDevice;
 			}
 
 			// Fallback: just use screen size
@@ -685,6 +692,38 @@ export default defineComponent({
 		// player management
 		const player = useMediaPlayer();
 		const volume = useVolume();
+
+		// Volume sync between iframes via postMessage
+		// When in controls-only mode, send volume changes to parent window
+		watch(() => volume.volume.value, (newVolume) => {
+			if (isControlsOnlyMode.value && window.parent !== window) {
+				window.parent.postMessage({
+					type: 'ott-volume-change',
+					volume: newVolume,
+					isMuted: volume.isMuted.value
+				}, '*');
+				console.log('🔊 Sending volume change to parent:', newVolume);
+			}
+		});
+
+		// Listen for volume changes from controls iframe and apply them
+		const handleVolumeMessage = (event: MessageEvent) => {
+			if (event.data.type === 'ott-volume-change') {
+				console.log('🔊 Received volume change:', event.data.volume);
+				volume.volume.value = event.data.volume;
+				if (event.data.isMuted !== undefined) {
+					volume.isMuted.value = event.data.isMuted;
+				}
+			}
+		};
+
+		onMounted(() => {
+			window.addEventListener('message', handleVolumeMessage);
+		});
+
+		onUnmounted(() => {
+			window.removeEventListener('message', handleVolumeMessage);
+		});
 
 		function togglePlayback() {
 			if (store.state.room.isPlaying) {

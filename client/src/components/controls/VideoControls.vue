@@ -158,7 +158,7 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 	}
 
 	&.outside-video {
-		background: rgb($media-control-background);
+		background: transparent;
 		border-radius: 0 0 10px 10px;
 
 		&.hide {
