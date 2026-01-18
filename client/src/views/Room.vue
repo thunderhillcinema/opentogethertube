@@ -370,11 +370,39 @@ export default defineComponent({
 		const isProjectionistValue = ref(false);
 		const isProjectionist = computed(() => isProjectionistValue.value);
 
+		// Reactive state for screen dimensions and fullscreen (for mobile controls detection)
+		const isMobilePortrait = ref(false);
+		const isInFullscreen = ref(false);
+
+		function updateMobilePortraitState() {
+			const isMobile = window.matchMedia('(max-width: 760px)').matches;
+			const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+			isMobilePortrait.value = isMobile && isPortrait;
+		}
+
+		function updateFullscreenState() {
+			isInFullscreen.value = document.fullscreenElement !== null;
+		}
+
 		// Compute whether controls should be shown
-		// In projection mode, always show controls but pass projectionist status
-		// to allow selective visibility of individual controls
+		// In projection mode, hide controls on mobile portrait for audience (they'll use external controls iframe)
 		const shouldShowControls = computed(() => {
-			return true; // Always show controls container
+			// Controls-only mode always shows controls
+			if (isControlsOnlyMode.value) {
+				return true;
+			}
+
+			// Projection mode audience on mobile portrait: hide controls (they use external iframe)
+			if (isProjectionMode.value && !isProjectionist.value) {
+				// Hide controls if mobile + portrait + not fullscreen
+				if (isMobilePortrait.value && !isInFullscreen.value) {
+					console.log('🎬 Hiding controls on mobile portrait (audience mode) - will use external controls iframe');
+					return false;
+				}
+			}
+
+			// Default: show controls
+			return true;
 		});
 
 		// Compute whether user has full control permissions
@@ -457,6 +485,18 @@ export default defineComponent({
 
 		onMounted(() => {
 			iTimestampUpdater.value = setInterval(timestampUpdate, 250);
+
+			// Initialize mobile portrait and fullscreen state
+			updateMobilePortraitState();
+			updateFullscreenState();
+
+			// Watch for orientation and resize changes
+			window.addEventListener('resize', updateMobilePortraitState);
+			const orientationMQ = window.matchMedia('(orientation: portrait)');
+			orientationMQ.addEventListener('change', updateMobilePortraitState);
+
+			// Watch for fullscreen changes
+			document.addEventListener('fullscreenchange', updateFullscreenState);
 
 			// Listen for projectionist status from parent frame
 			if (isProjectionMode.value) {
