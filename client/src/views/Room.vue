@@ -25,6 +25,11 @@
 								{{ $t("common.play") }}
 							</v-btn>
 						</div>
+						<!-- Audience Play Button for Projection Mode -->
+						<AudiencePlayButton
+							:is-projection-mode="isProjectionMode"
+							:is-projectionist="isProjectionist"
+						/>
 					</div>
 					<VideoControls
 						v-if="shouldShowControls"
@@ -89,6 +94,11 @@
 								{{ $t("common.play") }}
 							</v-btn>
 						</div>
+						<!-- Audience Play Button for Projection Mode -->
+						<AudiencePlayButton
+							:is-projection-mode="isProjectionMode"
+							:is-projectionist="isProjectionist"
+						/>
 					</div>
 					<VideoControls
 						v-if="shouldShowControls"
@@ -274,6 +284,7 @@ import { ServerMessageSync } from "ott-common/models/messages";
 import { useScreenOrientation, useMouseInElement } from "@vueuse/core";
 import { KeyboardShortcuts, RoomKeyboardShortcutsKey } from "@/util/keyboard-shortcuts";
 import VideoControls from "@/components/controls/VideoControls.vue";
+import AudiencePlayButton from "@/components/AudiencePlayButton.vue";
 import RestoreQueue from "@/components/RestoreQueue.vue";
 import VoteSkip from "@/components/VoteSkip.vue";
 import { waitForToken } from "@/util/token";
@@ -289,6 +300,7 @@ export default defineComponent({
 	name: "room",
 	components: {
 		VideoControls,
+		AudiencePlayButton,
 		VideoQueue,
 		OmniPlayer,
 		Chat,
