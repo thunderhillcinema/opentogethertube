@@ -24,8 +24,8 @@
 				<PlaybackRateSwitcher v-if="showAdvancedControls" />
 				<!-- Video settings - Projectionist only -->
 				<VideoSettings v-if="showAdvancedControls" />
-				<!-- Fullscreen - Always visible -->
-				<FullscreenButton />
+				<!-- Fullscreen - Hidden on mobile portrait controls-only -->
+				<FullscreenButton v-if="!isMobilePortraitControls" />
 				<!-- PiP - Hidden on mobile portrait controls-only -->
 				<PictureInPictureButton v-if="!isMobilePortraitControls" />
 				<!-- Layout switcher - Projectionist only -->
@@ -69,8 +69,19 @@ const props = withDefaults(
 const isMobilePortrait = ref(false);
 
 function updateMobilePortraitState() {
-	const isMobile = window.matchMedia('(max-width: 760px)').matches;
+	const isMobileScreen = window.matchMedia('(max-width: 760px)').matches;
 	const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+
+	// Check for touch capability to distinguish real mobile from desktop with small window
+	const isTouchDevice = (
+		'ontouchstart' in window ||
+		navigator.maxTouchPoints > 0 ||
+		(navigator as any).msMaxTouchPoints > 0
+	);
+
+	// True mobile = mobile screen AND touch capability
+	const isMobile = isMobileScreen && isTouchDevice;
+
 	isMobilePortrait.value = isMobile && isPortrait;
 }
 
@@ -200,6 +211,11 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 			}
 		}
 	}
+}
+
+// Video controls wrapper - ensure transparent background for controls-only mode
+.video-controls-wrapper {
+	background: transparent;
 }
 
 // Mobile portrait controls-only mode: compact layout

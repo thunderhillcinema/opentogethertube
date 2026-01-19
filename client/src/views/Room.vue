@@ -1,5 +1,5 @@
 <template>
-	<div>
+	<div :style="isControlsOnlyMode ? 'background: transparent;' : ''">
 		<!-- HACK: For some reason, safari really doesn't like typescript enums. As a result, we are forced to not use the enums, and use their literal values instead. -->
 
 		<!-- CONTROLS-ONLY MODE: Just the controls for separate iframe -->
