@@ -24,11 +24,11 @@
 				<PlaybackRateSwitcher v-if="showAdvancedControls" />
 				<!-- Video settings - Projectionist only -->
 				<VideoSettings v-if="showAdvancedControls" />
-				<!-- Fullscreen - Hidden on mobile portrait controls-only -->
-				<FullscreenButton v-if="!isMobilePortraitControls" />
+				<!-- Fullscreen - Hidden on mobile portrait controls-only, also hidden for advanced users (LayoutSwitcher provides it) -->
+				<FullscreenButton v-if="!isMobilePortraitControls && !showAdvancedControls" />
 				<!-- PiP - Hidden on mobile portrait controls-only -->
 				<PictureInPictureButton v-if="!isMobilePortraitControls" />
-				<!-- Layout switcher - Projectionist only -->
+				<!-- Layout switcher - Projectionist only (includes fullscreen button) -->
 				<LayoutSwitcher v-if="showAdvancedControls" />
 			</div>
 		</div>
