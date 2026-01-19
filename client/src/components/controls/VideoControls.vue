@@ -172,7 +172,7 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 	// Mobile-responsive height and padding
 	@media (max-width: variables.$xs-max) {
 		min-height: media-controls.$video-controls-height-mobile;
-		padding: 16px;
+		padding: 8px 12px; // Reduced vertical padding to minimize excess space
 	}
 
 	&.in-video {

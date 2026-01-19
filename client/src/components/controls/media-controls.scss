@@ -3,7 +3,7 @@
 
 // Mobile-responsive video controls height
 $video-controls-height: 90px;
-$video-controls-height-mobile: 120px;
+$video-controls-height-mobile: 80px; // Reduced from 120px to minimize excess space
 
 $media-control-surface: rgb(var(--v-theme-media-control-surface));
 $menu-background: rgba(var(--v-theme-surface), 0.9);
