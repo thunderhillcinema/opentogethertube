@@ -65,8 +65,9 @@ const props = withDefaults(
 	}
 );
 
-// Reactive state for mobile portrait detection
+// Reactive state for mobile portrait detection and fullscreen
 const isMobilePortrait = ref(false);
+const isFullscreen = ref(false);
 
 function updateMobilePortraitState() {
 	const isMobileScreen = window.matchMedia('(max-width: 760px)').matches;
@@ -85,9 +86,29 @@ function updateMobilePortraitState() {
 	isMobilePortrait.value = isMobile && isPortrait;
 }
 
-// Detect if this is mobile portrait controls-only mode (for compact layout)
+function updateFullscreenState() {
+	isFullscreen.value = document.fullscreenElement !== null;
+}
+
+// Detect if this is mobile portrait controls-only mode (for compact layout and hiding buttons)
+// Don't hide buttons when in fullscreen - user needs access to all controls
 const isMobilePortraitControls = computed(() => {
-	return props.mode === 'outside-video' && isMobilePortrait.value && props.isProjectionMode && !props.isProjectionist;
+	const result = props.mode === 'outside-video' &&
+		   isMobilePortrait.value &&
+		   props.isProjectionMode &&
+		   !props.isProjectionist &&
+		   !isFullscreen.value;  // Show all buttons when fullscreen
+
+	console.log('[VideoControls] isMobilePortraitControls:', {
+		mode: props.mode,
+		isMobilePortrait: isMobilePortrait.value,
+		isProjectionMode: props.isProjectionMode,
+		isProjectionist: props.isProjectionist,
+		isFullscreen: isFullscreen.value,
+		result
+	});
+
+	return result;
 });
 
 // Determine if audience-restricted controls should be shown
@@ -117,13 +138,17 @@ watch(() => props.isProjectionMode, (newVal, oldVal) => {
 });
 
 onMounted(() => {
-	// Initialize mobile portrait state
+	// Initialize mobile portrait and fullscreen state
 	updateMobilePortraitState();
+	updateFullscreenState();
 
 	// Watch for orientation and resize changes
 	window.addEventListener('resize', updateMobilePortraitState);
 	const orientationMQ = window.matchMedia('(orientation: portrait)');
 	orientationMQ.addEventListener('change', updateMobilePortraitState);
+
+	// Watch for fullscreen changes
+	document.addEventListener('fullscreenchange', updateFullscreenState);
 });
 </script>
 

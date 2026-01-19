@@ -438,6 +438,15 @@ export default defineComponent({
 				}
 			}
 
+			console.log('🎬 shouldShowControls decision:', {
+				isControlsOnlyMode: isControlsOnlyMode.value,
+				isProjectionMode: isProjectionMode.value,
+				isProjectionist: isProjectionist.value,
+				isMobilePortrait: isMobilePortrait.value,
+				isInFullscreen: isInFullscreen.value,
+				result: true
+			});
+
 			// Default: show controls
 			return true;
 		});
