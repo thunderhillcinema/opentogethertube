@@ -421,18 +421,19 @@ export default defineComponent({
 		}
 
 		// Compute whether controls should be shown
-		// In projection mode, hide controls on mobile portrait for audience (they'll use external controls iframe)
+		// In projection mode, hide controls on mobile portrait for audience (show in landscape/fullscreen)
 		const shouldShowControls = computed(() => {
 			// Controls-only mode always shows controls
 			if (isControlsOnlyMode.value) {
 				return true;
 			}
 
-			// Projection mode audience on mobile portrait: hide controls (they use external iframe)
+			// Projection mode audience: hide controls on mobile portrait (unless fullscreen)
+			// Controls will show in landscape or when fullscreen
 			if (isProjectionMode.value && !isProjectionist.value) {
 				// Hide controls if mobile + portrait + not fullscreen
 				if (isMobilePortrait.value && !isInFullscreen.value) {
-					console.log('🎬 Hiding controls on mobile portrait (audience mode) - will use external controls iframe');
+					console.log('🎬 Hiding controls on mobile portrait (audience mode) - controls hidden until landscape or fullscreen');
 					return false;
 				}
 			}
