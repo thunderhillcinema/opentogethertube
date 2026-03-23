@@ -760,6 +760,7 @@ async fn add_or_sync_room_ctx(
     }
 
     let conflict = {
+<<<<<<< HEAD
         let ctx_read = ctx.read().await;
         let locator = ctx_read.rooms_to_monoliths.get(&room_name).copied();
 
@@ -767,6 +768,13 @@ async fn add_or_sync_room_ctx(
             if locator.monolith_id() == monolith_id {
                 None
             } else {
+=======
+        let mut ctx_write = ctx.write().await;
+        let locator = ctx_write.rooms_to_monoliths.get(&room_name).copied();
+
+        match locator {
+            Some(locator) if locator.monolith_id() != monolith_id => {
+>>>>>>> upstream/master
                 warn!(
                     monolith_id = %locator.monolith_id(),
                     monolith_id_new = %monolith_id,
@@ -775,10 +783,18 @@ async fn add_or_sync_room_ctx(
                     load_epoch_new = %load_epoch,
                     "room already loaded on a different monolith"
                 );
+<<<<<<< HEAD
                 match locator.load_epoch().cmp(&load_epoch) {
                     std::cmp::Ordering::Less => {
                         warn!(room = %room_name, "unloading room on new monolith because an older version is already loaded");
                         let handle = ctx_read
+=======
+
+                match locator.load_epoch().cmp(&load_epoch) {
+                    std::cmp::Ordering::Less => {
+                        warn!(room = %room_name, "unloading room on new monolith because an older version is already loaded");
+                        let handle = ctx_write
+>>>>>>> upstream/master
                             .monoliths
                             .get(&monolith_id)
                             .ok_or_else(|| anyhow::anyhow!("monolith not found"))?
@@ -788,11 +804,27 @@ async fn add_or_sync_room_ctx(
                     std::cmp::Ordering::Greater => {
                         warn!(room = %room_name, "unloading room on old monolith because it's the newer version");
                         let old_monolith_id = locator.monolith_id();
+<<<<<<< HEAD
                         let handle = ctx_read
+=======
+                        let handle = ctx_write
+>>>>>>> upstream/master
                             .monoliths
                             .get(&old_monolith_id)
                             .ok_or_else(|| anyhow::anyhow!("monolith not found"))?
                             .send_handle();
+<<<<<<< HEAD
+=======
+                        ctx_write.remove_room(&room_name, old_monolith_id)?;
+                        ctx_write.rooms_to_monoliths.insert(
+                            metadata.name.clone(),
+                            RoomLocator::new(monolith_id, load_epoch),
+                        );
+                        let Some(monolith) = ctx_write.monoliths.get_mut(&monolith_id) else {
+                            anyhow::bail!("monolith not found");
+                        };
+                        monolith.add_or_sync_room(metadata.clone())?;
+>>>>>>> upstream/master
                         Some(ConflictAction::Replace(handle, old_monolith_id))
                     }
                     std::cmp::Ordering::Equal => {
@@ -801,8 +833,22 @@ async fn add_or_sync_room_ctx(
                     }
                 }
             }
+<<<<<<< HEAD
         } else {
             None
+=======
+            _ => {
+                ctx_write.rooms_to_monoliths.insert(
+                    metadata.name.clone(),
+                    RoomLocator::new(monolith_id, load_epoch),
+                );
+                let Some(monolith) = ctx_write.monoliths.get_mut(&monolith_id) else {
+                    anyhow::bail!("monolith not found");
+                };
+                monolith.add_or_sync_room(metadata.clone())?;
+                None
+            }
+>>>>>>> upstream/master
         }
     };
 
@@ -811,7 +857,11 @@ async fn add_or_sync_room_ctx(
             handle.send(B2MUnload { room: room_name }).await?;
             return Err(anyhow::anyhow!("room already loaded"));
         }
+<<<<<<< HEAD
         Some(ConflictAction::Replace(handle, old_monolith_id)) => {
+=======
+        Some(ConflictAction::Replace(handle, _old_monolith_id)) => {
+>>>>>>> upstream/master
             if let Err(err) = handle
                 .send(B2MUnload {
                     room: room_name.clone(),
@@ -820,11 +870,15 @@ async fn add_or_sync_room_ctx(
             {
                 warn!(room = %room_name, "failed to unload room on old monolith: {:?}", err);
             }
+<<<<<<< HEAD
             ctx.write().await.remove_room(&room_name, old_monolith_id)?;
+=======
+>>>>>>> upstream/master
         }
         None => {}
     }
 
+<<<<<<< HEAD
     let mut ctx_write = ctx.write().await;
     ctx_write.rooms_to_monoliths.insert(
         metadata.name.clone(),
@@ -835,6 +889,8 @@ async fn add_or_sync_room_ctx(
     };
     monolith.add_or_sync_room(metadata)?;
 
+=======
+>>>>>>> upstream/master
     Ok(())
 }
 

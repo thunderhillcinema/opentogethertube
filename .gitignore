@@ -33,4 +33,7 @@ yarn-error.log*
 *.sw?
 
 .opencode/plans
+<<<<<<< HEAD
 server/test.local
+=======
+>>>>>>> upstream/master

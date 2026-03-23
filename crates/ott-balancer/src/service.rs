@@ -1,6 +1,7 @@
 use std::pin::Pin;
 use std::sync::Arc;
 
+use anyhow::{anyhow, Context};
 use bytes::Bytes;
 use futures_util::Future;
 use http_body_util::{BodyExt, Full};
@@ -344,6 +345,21 @@ fn no_monoliths() -> Response<Full<Bytes>> {
         .expect("failed to build NO_MONOLITHS")
 }
 
+struct ProxyRequestInFlightGuard;
+
+impl ProxyRequestInFlightGuard {
+    fn new() -> Self {
+        GAUGE_PROXY_REQUESTS_IN_FLIGHT.inc();
+        Self
+    }
+}
+
+impl Drop for ProxyRequestInFlightGuard {
+    fn drop(&mut self) {
+        GAUGE_PROXY_REQUESTS_IN_FLIGHT.dec();
+    }
+}
+
 async fn proxy_request(
     in_req: Request<IncomingBody>,
     target: MonolithProxyTarget,
@@ -351,14 +367,25 @@ async fn proxy_request(
     let request_timer = HISTOGRAM_PROXY_REQUEST_SECONDS
         .with_label_values(&[&target.id().to_string()])
         .start_timer();
+<<<<<<< HEAD
     GAUGE_PROXY_REQUESTS_IN_FLIGHT.inc();
+=======
+    let _in_flight_guard = ProxyRequestInFlightGuard::new();
+>>>>>>> upstream/master
     let response = async {
         let client = target.http_client();
         let (parts, body) = in_req.into_parts();
         let mut url: Url = target.config().uri().clone();
+<<<<<<< HEAD
         url.set_scheme("http").expect("failed to set scheme");
         url.set_port(Some(target.proxy_port()))
             .expect("failed to set port");
+=======
+        url.set_scheme("http")
+            .map_err(|_| anyhow!("failed to set proxy request scheme to http"))?;
+        url.set_port(Some(target.proxy_port()))
+            .map_err(|_| anyhow!("failed to set proxy request port to monolith proxy port"))?;
+>>>>>>> upstream/master
         url.set_path(parts.uri.path());
         url.set_query(parts.uri.query());
         // TODO: update X-Forwarded-For header
@@ -378,11 +405,20 @@ async fn proxy_request(
             builder = builder.header(k, v);
         }
         let body = res.bytes().await?;
+<<<<<<< HEAD
         Ok::<_, anyhow::Error>(builder.body(Full::new(body)).unwrap())
     }
     .await;
     request_timer.observe_duration();
     GAUGE_PROXY_REQUESTS_IN_FLIGHT.dec();
+=======
+        builder
+            .body(Full::new(body))
+            .context("failed to build proxied response")
+    }
+    .await;
+    request_timer.observe_duration();
+>>>>>>> upstream/master
     response
 }
 
@@ -535,6 +571,18 @@ static HISTOGRAM_PROXY_REQUEST_SECONDS: Lazy<HistogramVec> = Lazy::new(|| {
 #[cfg(test)]
 mod test {
     use super::*;
+    use std::future::pending;
+
+    fn reset_readiness_metrics() {
+        GAUGE_DISCOVERY_COMPLETED.set(0);
+        GAUGE_DISCOVERED_MONOLITHS.set(0);
+        GAUGE_CONNECTED_MONOLITHS.set(0);
+        GAUGE_HEALTHY.set(0);
+    }
+
+    fn reset_proxy_request_metrics() {
+        GAUGE_PROXY_REQUESTS_IN_FLIGHT.set(0);
+    }
 
     fn reset_readiness_metrics() {
         GAUGE_DISCOVERY_COMPLETED.set(0);
@@ -687,4 +735,39 @@ mod test {
 
         assert_eq!(GAUGE_HEALTHY.get(), 0);
     }
+<<<<<<< HEAD
+=======
+
+    #[test]
+    fn proxy_request_in_flight_guard_updates_gauge_on_drop() {
+        reset_proxy_request_metrics();
+        assert_eq!(GAUGE_PROXY_REQUESTS_IN_FLIGHT.get(), 0);
+
+        {
+            let _guard = ProxyRequestInFlightGuard::new();
+            assert_eq!(GAUGE_PROXY_REQUESTS_IN_FLIGHT.get(), 1);
+        }
+
+        assert_eq!(GAUGE_PROXY_REQUESTS_IN_FLIGHT.get(), 0);
+    }
+
+    #[tokio::test]
+    async fn proxy_request_in_flight_guard_cleans_up_on_task_abort() {
+        reset_proxy_request_metrics();
+        assert_eq!(GAUGE_PROXY_REQUESTS_IN_FLIGHT.get(), 0);
+
+        let handle = tokio::spawn(async {
+            let _guard = ProxyRequestInFlightGuard::new();
+            pending::<()>().await;
+        });
+
+        tokio::task::yield_now().await;
+        assert_eq!(GAUGE_PROXY_REQUESTS_IN_FLIGHT.get(), 1);
+
+        handle.abort();
+        let _ = handle.await;
+
+        assert_eq!(GAUGE_PROXY_REQUESTS_IN_FLIGHT.get(), 0);
+    }
+>>>>>>> upstream/master
 }
