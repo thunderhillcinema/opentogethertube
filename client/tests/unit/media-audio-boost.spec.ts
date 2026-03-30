@@ -66,11 +66,16 @@ describe("useMediaAudioBoost", () => {
 		};
 	}
 
+<<<<<<< HEAD
 	it("keeps gain neutral at 100% boost", () => {
+=======
+	it("does not create the graph on init or at 100% boost", () => {
+>>>>>>> upstream/master
 		const { context } = makeContext();
 		const factory = vi.fn(() => context);
 		const { api } = mountComposable(factory);
 
+<<<<<<< HEAD
 		api.setBoost(100);
 
 		expect(factory).toHaveBeenCalledTimes(1);
@@ -79,17 +84,43 @@ describe("useMediaAudioBoost", () => {
 	});
 
 	it("creates the graph once and clamps gain up to 300%", () => {
+=======
+		expect(factory).toHaveBeenCalledTimes(1);
+		expect(api.source.value).toBeUndefined();
+		expect(api.gain.value).toBeUndefined();
+
+		api.setBoost(100);
+
+		expect(context.createMediaElementSource).not.toHaveBeenCalled();
+		expect(context.createGain).not.toHaveBeenCalled();
+		expect(api.source.value).toBeUndefined();
+		expect(api.gain.value).toBeUndefined();
+	});
+
+	it("creates the graph once, clamps gain up to 300%, and resets to unity", () => {
+>>>>>>> upstream/master
 		const { context, gain, source } = makeContext();
 		const { api } = mountComposable(() => context);
 
 		api.setBoost(250);
 		api.setBoost(350);
 
+<<<<<<< HEAD
+=======
+		expect(gain.gain.value).toBe(3);
+
+		api.setBoost(100);
+
+>>>>>>> upstream/master
 		expect(context.createMediaElementSource).toHaveBeenCalledTimes(1);
 		expect(context.createGain).toHaveBeenCalledTimes(1);
 		expect(source.connect).toHaveBeenCalledWith(gain);
 		expect(gain.connect).toHaveBeenCalledWith(context.destination);
+<<<<<<< HEAD
 		expect(gain.gain.value).toBe(3);
+=======
+		expect(gain.gain.value).toBe(1);
+>>>>>>> upstream/master
 	});
 
 	it("resumes suspended contexts and disconnects on unmount", () => {

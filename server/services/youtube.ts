@@ -247,12 +247,17 @@ export default class YouTubeAdapter extends ServiceAdapter {
 		}
 	}
 
+<<<<<<< HEAD
 	async fetchVideoInfo(
 		id: string,
 		onlyProperties?: (keyof VideoMetadata)[],
 		credentials?: VideoServiceCredentials
 	): Promise<Video> {
 		const result = await this.videoApiRequest([id], onlyProperties, credentials);
+=======
+	async fetchVideoInfo(id: string, onlyProperties?: (keyof VideoMetadata)[]): Promise<Video> {
+		const result = await this.videoApiRequest([id], onlyProperties);
+>>>>>>> upstream/master
 		if (result.length === 0) {
 			throw new VideoNotFoundException();
 		}
@@ -269,7 +274,11 @@ export default class YouTubeAdapter extends ServiceAdapter {
 		for (const group of Object.values(groupedByMissingInfo)) {
 			const ids = group.map(request => request.id);
 			try {
+<<<<<<< HEAD
 				const result = await this.videoApiRequest(ids, group[0].missingInfo, credentials);
+=======
+				const result = await this.videoApiRequest(ids, group[0].missingInfo);
+>>>>>>> upstream/master
 				// @ts-expect-error this was fine before
 				results.push(...result);
 			} catch (e) {
