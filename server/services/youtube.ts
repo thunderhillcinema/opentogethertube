@@ -480,6 +480,9 @@ export default class YouTubeAdapter extends ServiceAdapter {
 		if (credentials?.youtube_access_token) {
 			headers["Authorization"] = `Bearer ${credentials.youtube_access_token}`;
 			log.info("Using per-request OAuth token for YouTube API call");
+		} else if (credentials?.youtube_api_key) {
+			params["key"] = credentials.youtube_api_key;
+			log.info("Using per-request YouTube API key");
 		} else {
 			params["key"] = this.apiKey;
 		}

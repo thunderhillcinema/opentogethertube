@@ -259,6 +259,7 @@ export interface SeekRequest extends RoomRequestBase {
 
 export interface VideoServiceCredentials {
 	youtube_access_token?: string;
+	youtube_api_key?: string;
 }
 
 export interface AddRequest extends RoomRequestBase {

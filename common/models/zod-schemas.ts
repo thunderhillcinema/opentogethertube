@@ -58,6 +58,7 @@ export const OttApiRequestVoteSchema = z.object({
 const CredentialsSchema = z
 	.object({
 		youtube_access_token: z.string().optional(),
+		youtube_api_key: z.string().optional(),
 	})
 	.optional();
 
