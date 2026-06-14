@@ -195,7 +195,7 @@ export default {
 	async getVideoInfo(
 		service: VideoService,
 		videoId: string,
-		credentials?: VideoServiceCredentials
+		credentials?: VideoServiceCredentials,
 	): Promise<Video> {
 		counterMethodsInvoked.labels({ method: "getVideoInfo" }).inc();
 
@@ -215,7 +215,7 @@ export default {
 				const fetchedVideo = await adapter.fetchVideoInfo(
 					cachedVideo.id,
 					missingInfo,
-					credentials
+					credentials,
 				);
 				if (fetchedVideo.service === cachedVideo.service) {
 					const video = mergeVideo(cachedVideo, fetchedVideo);
@@ -263,7 +263,7 @@ export default {
 
 	async getManyVideoInfo(
 		videoIds: VideoId[],
-		credentials?: VideoServiceCredentials
+		credentials?: VideoServiceCredentials,
 	): Promise<Video[]> {
 		counterMethodsInvoked.labels({ method: "getManyVideoInfo" }).inc();
 

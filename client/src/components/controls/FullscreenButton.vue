@@ -49,7 +49,12 @@ function toggleFullscreen() {
 	}
 	if (isMobile.value && screen.orientation) {
 		// force landscape; allow exit by rotating back to portrait
-		screen.orientation.lock("landscape").then(() => screen.orientation.unlock()).catch(() => {});
+		screen.orientation
+			.lock("landscape")
+			.then(() => screen.orientation.unlock())
+			.catch(() => {
+				/* orientation lock unsupported; ignore */
+			});
 	}
 }
 

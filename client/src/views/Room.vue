@@ -384,6 +384,9 @@ const QUEUE_TABS = ["queue", "add", "settings"] as const;
 
 type QueueTab = (typeof QUEUE_TABS)[number];
 
+// THC fork: hoisted to module scope (biome lint/performance/useTopLevelRegex)
+const MOBILE_UA_REGEX = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+
 // biome-ignore lint/nursery/noVueOptionsApi: TODO: convert to setup
 export default defineComponent({
 	name: "room",
@@ -430,27 +433,27 @@ export default defineComponent({
 
 		// Embed mode detection
 		const isEmbedMode = computed(() => {
-			const isEmbed = route.query.embed === 'true';
+			const isEmbed = route.query.embed === "true";
 			if (isEmbed) {
-				console.log('🎬 Embed mode activated');
+				console.log("🎬 Embed mode activated");
 			}
 			return isEmbed;
 		});
 
 		// Projection booth mode detection
 		const isProjectionMode = computed(() => {
-			const isProjection = route.query.projection === 'true';
+			const isProjection = route.query.projection === "true";
 			if (isProjection) {
-				console.log('🎬 Projection booth mode activated');
+				console.log("🎬 Projection booth mode activated");
 			}
 			return isProjection;
 		});
 
 		// Controls-only mode detection (for separate controls iframe)
 		const isControlsOnlyMode = computed(() => {
-			const isControlsOnly = route.query.controlsonly === 'true';
+			const isControlsOnly = route.query.controlsonly === "true";
 			if (isControlsOnly) {
-				console.log('🎮 Controls-only mode activated');
+				console.log("🎮 Controls-only mode activated");
 			}
 			return isControlsOnly;
 		});
@@ -466,29 +469,33 @@ export default defineComponent({
 
 		// Check if mobile=check parameter is present (means parent wants us to verify mobile status)
 		const shouldCheckMobile = computed(() => {
-			return route.query.mobile === 'check';
+			return route.query.mobile === "check";
 		});
 
 		// More reliable mobile detection using user agent AND screen size
 		function isTrulyMobile() {
 			// Check user agent for mobile devices
 			const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-			const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+			const isMobileUA = MOBILE_UA_REGEX.test(userAgent.toLowerCase());
 
 			// Check screen size
-			const isMobileScreen = window.matchMedia('(max-width: 760px)').matches;
+			const isMobileScreen = window.matchMedia("(max-width: 760px)").matches;
 
 			// Check for touch capability
-			const isTouchDevice = (
-				'ontouchstart' in window ||
+			const isTouchDevice =
+				"ontouchstart" in window ||
 				navigator.maxTouchPoints > 0 ||
-				(navigator as any).msMaxTouchPoints > 0
-			);
+				(navigator as any).msMaxTouchPoints > 0;
 
 			// If mobile=check parameter is present, require mobile user agent AND screen size AND touch capability
 			// This prevents desktop browsers with small windows from triggering mobile behavior
 			if (shouldCheckMobile.value) {
-				console.log('🔍 Mobile check:', {isMobileUA, isMobileScreen, isTouchDevice, userAgent: userAgent.substring(0, 50)});
+				console.log("🔍 Mobile check:", {
+					isMobileUA,
+					isMobileScreen,
+					isTouchDevice,
+					userAgent: userAgent.substring(0, 50),
+				});
 				return isMobileUA && isMobileScreen && isTouchDevice;
 			}
 
@@ -498,11 +505,15 @@ export default defineComponent({
 
 		function updateMobilePortraitState() {
 			const isMobile = isTrulyMobile();
-			const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+			const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 			isMobilePortrait.value = isMobile && isPortrait;
 
 			if (shouldCheckMobile.value) {
-				console.log('📱 Mobile portrait state updated:', {isMobile, isPortrait, isMobilePortrait: isMobilePortrait.value});
+				console.log("📱 Mobile portrait state updated:", {
+					isMobile,
+					isPortrait,
+					isMobilePortrait: isMobilePortrait.value,
+				});
 			}
 		}
 
@@ -523,30 +534,24 @@ export default defineComponent({
 			if (isProjectionMode.value && !isProjectionist.value) {
 				// Hide controls if mobile + portrait + not fullscreen
 				if (isMobilePortrait.value && !isInFullscreen.value) {
-					console.log('🎬 Hiding controls on mobile portrait (audience mode) - controls hidden until landscape or fullscreen');
+					console.log(
+						"🎬 Hiding controls on mobile portrait (audience mode) - controls hidden until landscape or fullscreen",
+					);
 					return false;
 				}
 			}
 
-			console.log('🎬 shouldShowControls decision:', {
+			console.log("🎬 shouldShowControls decision:", {
 				isControlsOnlyMode: isControlsOnlyMode.value,
 				isProjectionMode: isProjectionMode.value,
 				isProjectionist: isProjectionist.value,
 				isMobilePortrait: isMobilePortrait.value,
 				isInFullscreen: isInFullscreen.value,
-				result: true
+				result: true,
 			});
 
 			// Default: show controls
 			return true;
-		});
-
-		// Compute whether user has full control permissions
-		const hasFullControlAccess = computed(() => {
-			if (!isProjectionMode.value) {
-				return true; // Normal mode - full access
-			}
-			return isProjectionistValue.value; // Projection mode - only projectionist has full access
 		});
 
 		// video control visibility
@@ -627,34 +632,45 @@ export default defineComponent({
 			updateFullscreenState();
 
 			// Watch for orientation and resize changes
-			window.addEventListener('resize', updateMobilePortraitState);
-			const orientationMQ = window.matchMedia('(orientation: portrait)');
-			orientationMQ.addEventListener('change', updateMobilePortraitState);
+			window.addEventListener("resize", updateMobilePortraitState);
+			const orientationMQ = window.matchMedia("(orientation: portrait)");
+			orientationMQ.addEventListener("change", updateMobilePortraitState);
 
 			// Watch for fullscreen changes
-			document.addEventListener('fullscreenchange', updateFullscreenState);
+			document.addEventListener("fullscreenchange", updateFullscreenState);
 
 			// Listen for projectionist status from parent frame
 			if (isProjectionMode.value) {
 				const handleParentMessage = (event: MessageEvent) => {
 					// Accept messages from any origin for now
 					// TODO: Add origin validation in production
-					if (event.data && event.data.type === 'ott-projectionist-status') {
+					if (event.data && event.data.type === "ott-projectionist-status") {
 						const newStatus = event.data.isProjectionist === true;
-						console.log('🎬 Received projectionist message:', event.data, 'setting to:', newStatus);
+						console.log(
+							"🎬 Received projectionist message:",
+							event.data,
+							"setting to:",
+							newStatus,
+						);
 						isProjectionistValue.value = newStatus;
-						console.log('🎬 Projectionist ref updated to:', isProjectionistValue.value);
-						console.log('🎬 Computed isProjectionist now returns:', isProjectionist.value);
+						console.log("🎬 Projectionist ref updated to:", isProjectionistValue.value);
+						console.log(
+							"🎬 Computed isProjectionist now returns:",
+							isProjectionist.value,
+						);
 					}
 				};
 
-				window.addEventListener('message', handleParentMessage);
+				window.addEventListener("message", handleParentMessage);
 
 				// Request initial status from parent
 				if (window.parent && window.parent !== window) {
-					window.parent.postMessage({
-						type: 'ott-request-projectionist-status'
-					}, '*');
+					window.parent.postMessage(
+						{
+							type: "ott-request-projectionist-status",
+						},
+						"*",
+					);
 				}
 			}
 		});
@@ -803,21 +819,27 @@ export default defineComponent({
 
 		// Volume sync between iframes via postMessage
 		// When in controls-only mode, send volume changes to parent window
-		watch(() => volume.volume.value, (newVolume) => {
-			if (isControlsOnlyMode.value && window.parent !== window) {
-				window.parent.postMessage({
-					type: 'ott-volume-change',
-					volume: newVolume,
-					isMuted: volume.isMuted.value
-				}, '*');
-				console.log('🔊 Sending volume change to parent:', newVolume);
-			}
-		});
+		watch(
+			() => volume.volume.value,
+			newVolume => {
+				if (isControlsOnlyMode.value && window.parent !== window) {
+					window.parent.postMessage(
+						{
+							type: "ott-volume-change",
+							volume: newVolume,
+							isMuted: volume.isMuted.value,
+						},
+						"*",
+					);
+					console.log("🔊 Sending volume change to parent:", newVolume);
+				}
+			},
+		);
 
 		// Listen for volume changes from controls iframe and apply them
 		const handleVolumeMessage = (event: MessageEvent) => {
-			if (event.data.type === 'ott-volume-change') {
-				console.log('🔊 Received volume change:', event.data.volume);
+			if (event.data.type === "ott-volume-change") {
+				console.log("🔊 Received volume change:", event.data.volume);
 				volume.volume.value = event.data.volume;
 				if (event.data.isMuted !== undefined) {
 					volume.isMuted.value = event.data.isMuted;
@@ -826,11 +848,11 @@ export default defineComponent({
 		};
 
 		onMounted(() => {
-			window.addEventListener('message', handleVolumeMessage);
+			window.addEventListener("message", handleVolumeMessage);
 		});
 
 		onUnmounted(() => {
-			window.removeEventListener('message', handleVolumeMessage);
+			window.removeEventListener("message", handleVolumeMessage);
 		});
 
 		function togglePlayback() {
@@ -1384,11 +1406,11 @@ $in-video-chat-width-small: 250px;
 	--v-scrollbar-offset: 0px !important;
 
 	// Explicitly hide any scrollbar elements
-	scrollbar-width: none;  // Firefox
-	-ms-overflow-style: none;  // IE/Edge
+	scrollbar-width: none; // Firefox
+	-ms-overflow-style: none; // IE/Edge
 
 	&::-webkit-scrollbar {
-		display: none;  // Chrome/Safari
+		display: none; // Chrome/Safari
 		width: 0;
 		height: 0;
 	}
@@ -1488,7 +1510,8 @@ $in-video-chat-width-small: 250px;
 		}
 
 		// Fix video element scaling to properly fit constrained area
-		video, iframe {
+		video,
+		iframe {
 			object-fit: contain;
 			width: 100% !important;
 			height: 100% !important;
@@ -1509,9 +1532,9 @@ $in-video-chat-width-small: 250px;
 // Projection booth mode - minimal single-column layout
 .video-container.projection-mode {
 	display: grid;
-	grid-template-columns: 1fr;  // Single column - no sidebar
+	grid-template-columns: 1fr; // Single column - no sidebar
 	grid-template-rows: 1fr;
-	overflow: hidden;  // Prevent scrollbars
+	overflow: hidden; // Prevent scrollbars
 	margin: 0;
 	padding: 0;
 }

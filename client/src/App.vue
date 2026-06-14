@@ -98,12 +98,7 @@
 								/>
 							</DropdownMenuContent>
 						</DropdownMenu>
-						<Button
-							v-else
-							variant="marquee"
-							size="sm"
-							@click="redirectToFullSite"
-						>
+						<Button v-else variant="marquee" size="sm" @click="redirectToFullSite">
 							<Icon :icon="mdiPlusBox" />
 							{{ $t("nav.create.title") }}
 						</Button>
@@ -345,11 +340,11 @@ const App = defineComponent({
 		// by a simple redirect button in embed mode).
 		const getCurrentLocaleFlag = () => {
 			const localeMap: Record<string, string> = {
-				en: "🇺🇸",
-				de: "🇩🇪",
-				fr: "🇫🇷",
-				ru: "🇷🇺",
-				es: "🇪🇸",
+				"en": "🇺🇸",
+				"de": "🇩🇪",
+				"fr": "🇫🇷",
+				"ru": "🇷🇺",
+				"es": "🇪🇸",
 				"pt-br": "🇧🇷",
 			};
 			return localeMap[store.state.settings.locale] || "🇺🇸";

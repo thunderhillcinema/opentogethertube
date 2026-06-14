@@ -1,10 +1,6 @@
 <template>
 	<transition name="fade">
-		<div
-			v-if="shouldShowButton"
-			class="audience-play-overlay"
-			@click="handlePlayClick"
-		>
+		<div v-if="shouldShowButton" class="audience-play-overlay" @click="handlePlayClick">
 			<div class="play-button-container">
 				<Button
 					size="icon"
@@ -37,7 +33,7 @@ const props = withDefaults(
 	{
 		isProjectionMode: false,
 		isProjectionist: false,
-	}
+	},
 );
 
 const store = useStore();
@@ -54,7 +50,7 @@ watch(
 	(isPlaying, wasPlaying) => {
 		// When video stops (transitions from playing to not playing)
 		if (wasPlaying && !isPlaying && props.isProjectionMode && !props.isProjectionist) {
-			console.log('[AudiencePlayButton] Video stopped, starting 10 second cooldown');
+			console.log("[AudiencePlayButton] Video stopped, starting 10 second cooldown");
 
 			// Start cooldown
 			isInCooldown.value = true;
@@ -66,12 +62,12 @@ watch(
 
 			// Set timer to end cooldown after 10 seconds
 			cooldownTimer.value = setTimeout(() => {
-				console.log('[AudiencePlayButton] Cooldown period ended, button can appear');
+				console.log("[AudiencePlayButton] Cooldown period ended, button can appear");
 				isInCooldown.value = false;
 				cooldownTimer.value = null;
 			}, COOLDOWN_DURATION_MS);
 		}
-	}
+	},
 );
 
 // Clean up timer when component unmounts
@@ -91,12 +87,18 @@ const shouldShowButton = computed(() => {
 		!isInCooldown.value;
 
 	if (props.isProjectionMode) {
-		console.log('[AudiencePlayButton] Visibility check:',
-			'isProjectionMode=', props.isProjectionMode,
-			'isProjectionist=', props.isProjectionist,
-			'isPlaying=', store.state.room.isPlaying,
-			'isInCooldown=', isInCooldown.value,
-			'shouldShow=', result
+		console.log(
+			"[AudiencePlayButton] Visibility check:",
+			"isProjectionMode=",
+			props.isProjectionMode,
+			"isProjectionist=",
+			props.isProjectionist,
+			"isPlaying=",
+			store.state.room.isPlaying,
+			"isInCooldown=",
+			isInCooldown.value,
+			"shouldShow=",
+			result,
 		);
 	}
 
@@ -104,7 +106,7 @@ const shouldShowButton = computed(() => {
 });
 
 function handlePlayClick() {
-	console.log('[AudiencePlayButton] Play button clicked by audience member');
+	console.log("[AudiencePlayButton] Play button clicked by audience member");
 	roomapi.play();
 }
 </script>

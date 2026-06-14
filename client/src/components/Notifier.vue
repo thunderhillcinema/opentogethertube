@@ -52,8 +52,8 @@ const isEmbedMode = computed(() => route.query.embed === "true");
 const isProjectionMode = computed(() => route.query.projection === "true");
 
 // Hide notifications on mobile embed OR projection mode
-const shouldHideNotifications = computed(() =>
-	(isMobile.value && isEmbedMode.value) || isProjectionMode.value
+const shouldHideNotifications = computed(
+	() => (isMobile.value && isEmbedMode.value) || isProjectionMode.value,
 );
 
 function closeAll() {

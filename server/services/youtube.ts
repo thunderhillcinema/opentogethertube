@@ -257,7 +257,7 @@ export default class YouTubeAdapter extends ServiceAdapter {
 	async fetchVideoInfo(
 		id: string,
 		onlyProperties?: (keyof VideoMetadata)[],
-		credentials?: VideoServiceCredentials
+		credentials?: VideoServiceCredentials,
 	): Promise<Video> {
 		const result = await this.videoApiRequest([id], onlyProperties, credentials);
 		if (result.length === 0) {
@@ -269,7 +269,7 @@ export default class YouTubeAdapter extends ServiceAdapter {
 
 	async fetchManyVideoInfo(
 		requests: VideoRequest[],
-		credentials?: VideoServiceCredentials
+		credentials?: VideoServiceCredentials,
 	): Promise<Video[]> {
 		const groupedByMissingInfo = _.groupBy(requests, request => request.missingInfo);
 		const results: Video[] = [];
@@ -462,7 +462,7 @@ export default class YouTubeAdapter extends ServiceAdapter {
 	async videoApiRequest(
 		ids: string | string[],
 		onlyProperties?: (keyof VideoMetadata)[],
-		credentials?: VideoServiceCredentials
+		credentials?: VideoServiceCredentials,
 	): Promise<Partial<Video>[]> {
 		if (!Array.isArray(ids)) {
 			ids = [ids];

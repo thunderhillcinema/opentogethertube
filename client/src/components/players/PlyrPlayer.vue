@@ -16,6 +16,8 @@ import type {
 } from "../composables";
 import { useCaptions, useMediaAudioBoost } from "../composables";
 
+// THC fork: legacy player, not currently wired into OmniPlayer (kept for reference).
+// biome-ignore lint/nursery/noVueOptionsApi: legacy fork component, pending removal or rewrite
 export default defineComponent({
 	name: "PlyrPlayer",
 	props: {

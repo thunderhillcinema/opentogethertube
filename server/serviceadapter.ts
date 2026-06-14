@@ -67,7 +67,7 @@ export class ServiceAdapter {
 	async fetchVideoInfo(
 		id: string,
 		properties?: (keyof VideoMetadata)[],
-		credentials?: VideoServiceCredentials
+		credentials?: VideoServiceCredentials,
 	): Promise<Video> {
 		throw new IncompleteServiceAdapterException(
 			`Service ${this.serviceId} does not implement method fetchVideoInfo`,
@@ -80,7 +80,7 @@ export class ServiceAdapter {
 	 */
 	async fetchManyVideoInfo(
 		requests: VideoRequest[],
-		credentials?: VideoServiceCredentials
+		credentials?: VideoServiceCredentials,
 	): Promise<Video[]> {
 		const videos: Video[] = [];
 		for (const req of requests) {

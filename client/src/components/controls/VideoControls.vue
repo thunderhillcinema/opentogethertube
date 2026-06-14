@@ -1,5 +1,8 @@
 <template>
-	<div class="video-controls-wrapper" :class="{ 'mobile-portrait-controls': isMobilePortraitControls }">
+	<div
+		class="video-controls-wrapper"
+		:class="{ 'mobile-portrait-controls': isMobilePortraitControls }"
+	>
 		<div
 			:class="{
 				'video-controls': true,
@@ -69,15 +72,14 @@ const isMobilePortrait = ref(false);
 const isFullscreen = ref(false);
 
 function updateMobilePortraitState() {
-	const isMobileScreen = window.matchMedia('(max-width: 760px)').matches;
-	const isPortrait = window.matchMedia('(orientation: portrait)').matches;
+	const isMobileScreen = window.matchMedia("(max-width: 760px)").matches;
+	const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
 	// Check for touch capability to distinguish real mobile from desktop with small window
-	const isTouchDevice = (
-		'ontouchstart' in window ||
+	const isTouchDevice =
+		"ontouchstart" in window ||
 		navigator.maxTouchPoints > 0 ||
-		(navigator as any).msMaxTouchPoints > 0
-	);
+		(navigator as any).msMaxTouchPoints > 0;
 
 	// True mobile = mobile screen AND touch capability
 	const isMobile = isMobileScreen && isTouchDevice;
@@ -92,19 +94,20 @@ function updateFullscreenState() {
 // Detect if this is mobile portrait controls-only mode (for compact layout and hiding buttons)
 // Don't hide buttons when in fullscreen - user needs access to all controls
 const isMobilePortraitControls = computed(() => {
-	const result = props.mode === 'outside-video' &&
-		   isMobilePortrait.value &&
-		   props.isProjectionMode &&
-		   !props.isProjectionist &&
-		   !isFullscreen.value;  // Show all buttons when fullscreen
+	const result =
+		props.mode === "outside-video" &&
+		isMobilePortrait.value &&
+		props.isProjectionMode &&
+		!props.isProjectionist &&
+		!isFullscreen.value; // Show all buttons when fullscreen
 
-	console.log('[VideoControls] isMobilePortraitControls:', {
+	console.log("[VideoControls] isMobilePortraitControls:", {
 		mode: props.mode,
 		isMobilePortrait: isMobilePortrait.value,
 		isProjectionMode: props.isProjectionMode,
 		isProjectionist: props.isProjectionist,
 		isFullscreen: isFullscreen.value,
-		result
+		result,
 	});
 
 	return result;
@@ -113,10 +116,14 @@ const isMobilePortraitControls = computed(() => {
 // Determine if audience-restricted controls should be shown
 const showAdvancedControls = computed(() => {
 	const result = !props.isProjectionMode ? true : props.isProjectionist === true;
-	console.log('[VideoControls] Computing showAdvancedControls:',
-		'isProjectionMode=', props.isProjectionMode,
-		'isProjectionist=', props.isProjectionist,
-		'result=', result
+	console.log(
+		"[VideoControls] Computing showAdvancedControls:",
+		"isProjectionMode=",
+		props.isProjectionMode,
+		"isProjectionist=",
+		props.isProjectionist,
+		"result=",
+		result,
 	);
 
 	// If not in projection mode, show everything
@@ -128,13 +135,19 @@ const showAdvancedControls = computed(() => {
 });
 
 // Watch for prop changes to verify reactivity
-watch(() => props.isProjectionist, (newVal, oldVal) => {
-	console.log('[VideoControls] isProjectionist changed:', { oldVal, newVal });
-});
+watch(
+	() => props.isProjectionist,
+	(newVal, oldVal) => {
+		console.log("[VideoControls] isProjectionist changed:", { oldVal, newVal });
+	},
+);
 
-watch(() => props.isProjectionMode, (newVal, oldVal) => {
-	console.log('[VideoControls] isProjectionMode changed:', { oldVal, newVal });
-});
+watch(
+	() => props.isProjectionMode,
+	(newVal, oldVal) => {
+		console.log("[VideoControls] isProjectionMode changed:", { oldVal, newVal });
+	},
+);
 
 onMounted(() => {
 	// Initialize mobile portrait and fullscreen state
@@ -142,12 +155,12 @@ onMounted(() => {
 	updateFullscreenState();
 
 	// Watch for orientation and resize changes
-	window.addEventListener('resize', updateMobilePortraitState);
-	const orientationMQ = window.matchMedia('(orientation: portrait)');
-	orientationMQ.addEventListener('change', updateMobilePortraitState);
+	window.addEventListener("resize", updateMobilePortraitState);
+	const orientationMQ = window.matchMedia("(orientation: portrait)");
+	orientationMQ.addEventListener("change", updateMobilePortraitState);
 
 	// Watch for fullscreen changes
-	document.addEventListener('fullscreenchange', updateFullscreenState);
+	document.addEventListener("fullscreenchange", updateFullscreenState);
 });
 </script>
 
@@ -214,11 +227,11 @@ onMounted(() => {
 			overflow-x: auto;
 			flex-wrap: nowrap; // Prevent wrapping to enable horizontal scroll
 			padding-right: 8px; // Add padding for scroll area
-			
+
 			// Smooth scrolling behavior
 			scroll-behavior: smooth;
 			-webkit-overflow-scrolling: touch;
-			
+
 			// Hide scrollbar while keeping scroll functionality
 			scrollbar-width: none;
 			&::-webkit-scrollbar {
