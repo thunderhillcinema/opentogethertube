@@ -5,6 +5,8 @@ import path from "node:path";
 import { glob } from "glob";
 import { SOURCE_DIR } from "./constants";
 
+const SOURCE_DIR_PREFIX_REGEX = /src\/?/i;
+
 export function isWSL() {
 	if (process.platform !== "linux") {
 		return false;
@@ -22,10 +24,12 @@ export function isWSL() {
 }
 
 export function getPackageJson() {
+	// biome-ignore lint/style/noCommonJs: biome migration
 	return require(path.resolve(process.cwd(), "package.json"));
 }
 
 export function getPluginJson() {
+	// biome-ignore lint/style/noCommonJs: biome migration
 	return require(path.resolve(process.cwd(), `${SOURCE_DIR}/plugin.json`));
 }
 
@@ -42,13 +46,15 @@ export async function getEntries(): Promise<Record<string, string>> {
 		pluginsJson.map(pluginJson => {
 			const folder = path.dirname(pluginJson);
 			return glob(`${folder}/module.{ts,tsx,js,jsx}`, { absolute: true });
-		})
+		}),
 	);
 
 	return plugins.reduce((result, modules) => {
 		return modules.reduce((result, module) => {
 			const pluginPath = path.dirname(module);
-			const pluginName = path.relative(process.cwd(), pluginPath).replace(/src\/?/i, "");
+			const pluginName = path
+				.relative(process.cwd(), pluginPath)
+				.replace(SOURCE_DIR_PREFIX_REGEX, "");
 			const entryName = pluginName === "" ? "module" : `${pluginName}/module`;
 
 			result[entryName] = module;

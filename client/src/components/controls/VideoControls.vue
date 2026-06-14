@@ -3,8 +3,8 @@
 		<div
 			:class="{
 				'video-controls': true,
-				'in-video': mode == 'in-video',
-				'outside-video': mode == 'outside-video',
+				'in-video': mode === 'in-video',
+				'outside-video relative rounded-b-md': mode === 'outside-video',
 				'hide': !controlsVisible,
 			}"
 		>
@@ -13,7 +13,6 @@
 				<!-- Playback controls - Projectionist only -->
 				<BasicControls v-if="showAdvancedControls" :current-position="truePosition" />
 				<!-- Volume - Always visible -->
-				<!-- eslint-disable-next-line vue/no-v-model-argument -->
 				<VolumeControl />
 				<!-- Timestamp - Always visible for playtime info -->
 				<TimestampDisplay :current-position="truePosition" data-cy="timestamp-display" />
@@ -62,7 +61,7 @@ const props = withDefaults(
 		mode: "in-video",
 		isProjectionMode: false,
 		isProjectionist: false,
-	}
+	},
 );
 
 // Reactive state for mobile portrait detection and fullscreen
@@ -152,11 +151,10 @@ onMounted(() => {
 });
 </script>
 
+<!-- biome-ignore lint/nursery/useScopedStyles: biome migration -->
 <style lang="scss">
 @use "./media-controls.scss";
 @use "../../variables.scss";
-
-$media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 
 .grow {
 	flex-grow: 1;
@@ -181,8 +179,8 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 
 		background: linear-gradient(
 			to top,
-			rgba($media-control-background, 0.65),
-			rgba($media-control-background, 0)
+			color-mix(in srgb, var(--ink) 78%, transparent),
+			color-mix(in srgb, var(--ink) 0%, transparent)
 		);
 		transition: all 0.2s;
 
@@ -194,8 +192,8 @@ $media-control-background: var(--v-theme-media-control-background, (0, 0, 0));
 	}
 
 	&.outside-video {
+		// THC fork: transparent background for embed/projection mode (border radius from template's rounded-b-md)
 		background: transparent;
-		border-radius: 0 0 10px 10px;
 
 		&.hide {
 			opacity: 0;

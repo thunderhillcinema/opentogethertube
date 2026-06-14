@@ -1,6 +1,6 @@
 <template>
 	<iframe
-		title="PeerTube Player"
+		:title="$t('player.peertube-player')"
 		class="peertube"
 		id="peertube-player"
 		:src="peertubeUrl"
@@ -14,6 +14,7 @@ import { PeerTubePlayer as Peertube } from "@peertube/embed-api";
 // CURRENTLY SOMEWHAT BROKEN
 // does not respect position syncing for some reason.
 
+// biome-ignore lint/nursery/noVueOptionsApi: TODO: convert to setup
 const PeertubePlayer = defineComponent({
 	name: "PeertubePlayer",
 	props: {
@@ -27,7 +28,7 @@ const PeertubePlayer = defineComponent({
 		const peertubeHost = computed(() => videoId.value[0]);
 		const peertubeId = computed(() => videoId.value[1]);
 		const peertubeUrl = computed(
-			() => `https://${peertubeHost.value}/videos/embed/${peertubeId.value}?controls=0&api=1`
+			() => `https://${peertubeHost.value}/videos/embed/${peertubeId.value}?controls=0&api=1`,
 		);
 
 		onMounted(async () => {
@@ -118,5 +119,6 @@ const PeertubePlayer = defineComponent({
 	},
 });
 
+// biome-ignore lint/nursery/noVueOptionsApi: TODO: convert to setup
 export default PeertubePlayer;
 </script>

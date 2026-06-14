@@ -18,7 +18,7 @@ export class ServiceAdapter {
 	 */
 	get serviceId(): VideoService {
 		throw new IncompleteServiceAdapterException(
-			`Service adapter ${this.constructor.name} does not have a serviceId property`
+			`Service adapter ${this.constructor.name} does not have a serviceId property`,
 		);
 	}
 
@@ -48,7 +48,7 @@ export class ServiceAdapter {
 	 */
 	isCollectionURL(url: string): boolean {
 		throw new IncompleteServiceAdapterException(
-			`Service ${this.serviceId} does not implement method isCollectionURL`
+			`Service ${this.serviceId} does not implement method isCollectionURL`,
 		);
 	}
 
@@ -57,7 +57,7 @@ export class ServiceAdapter {
 	 */
 	getVideoId(url: string): string {
 		throw new IncompleteServiceAdapterException(
-			`Service ${this.serviceId} does not implement method getVideoId`
+			`Service ${this.serviceId} does not implement method getVideoId`,
 		);
 	}
 
@@ -70,7 +70,7 @@ export class ServiceAdapter {
 		credentials?: VideoServiceCredentials
 	): Promise<Video> {
 		throw new IncompleteServiceAdapterException(
-			`Service ${this.serviceId} does not implement method fetchVideoInfo`
+			`Service ${this.serviceId} does not implement method fetchVideoInfo`,
 		);
 	}
 
@@ -88,7 +88,7 @@ export class ServiceAdapter {
 				videos.push(await this.fetchVideoInfo(req.id, req.missingInfo, credentials));
 			} catch (error) {
 				log.warn(
-					`fetchManyVideoInfo: failed to fetch ${this.serviceId}:${req.id}: ${error}, skipping`
+					`fetchManyVideoInfo: failed to fetch ${this.serviceId}:${req.id}: ${error}, skipping`,
 				);
 			}
 		}
@@ -100,10 +100,10 @@ export class ServiceAdapter {
 	 */
 	async resolveURL(
 		url: string,
-		properties?: (keyof VideoMetadata)[]
+		properties?: (keyof VideoMetadata)[],
 	): Promise<(Video | { url: string })[] | BulkVideoResult> {
 		throw new IncompleteServiceAdapterException(
-			`Service ${this.serviceId} does not implement method resolveURL`
+			`Service ${this.serviceId} does not implement method resolveURL`,
 		);
 	}
 

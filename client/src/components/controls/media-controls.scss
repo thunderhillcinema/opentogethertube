@@ -1,19 +1,17 @@
-@use 'vuetify/settings';
-@use '../../variables.scss';
+// THC fork: mobile breakpoint (Vuetify $xs-max equivalent; variables.scss removed in visual overhaul)
+$xs-max: 600px;
 
-// Mobile-responsive video controls height
 $video-controls-height: 90px;
-$video-controls-height-mobile: 80px; // Reduced from 120px to minimize excess space
-
-$media-control-surface: rgb(var(--v-theme-media-control-surface));
-$menu-background: rgba(var(--v-theme-surface), 0.9);
+$video-controls-height-mobile: 80px; // THC fork: reduced from 120px to minimize excess space
+$media-control-surface: var(--foreground);
+$menu-background: color-mix(in srgb, var(--card) 92%, transparent);
 $menu-radius: 10px;
 
 .media-control {
 	color: $media-control-surface;
-	
-	// Mobile-specific sizing for touch interaction
-	@media (max-width: variables.$xs-max) {
+
+	// THC fork: mobile-specific sizing for touch interaction
+	@media (max-width: $xs-max) {
 		min-width: 44px;
 		min-height: 44px;
 	}

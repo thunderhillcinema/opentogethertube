@@ -38,6 +38,7 @@ const httpc = axios.create({
 });
 
 let guestAuthToken: string | undefined;
+const TRAILING_DOT_REGEX = /\.$/;
 
 async function fetchGuestAuthToken(): Promise<string | undefined> {
 	try {
@@ -50,7 +51,7 @@ async function fetchGuestAuthToken(): Promise<string | undefined> {
 				headers: {
 					"User-Agent": `OpenTogetherTube GuestToken`,
 				},
-			}
+			},
 		);
 
 		// 1) Try to extract from Set-Cookie (older behavior)
@@ -83,7 +84,7 @@ async function fetchGuestAuthToken(): Promise<string | undefined> {
 				headers: {
 					"User-Agent": `OpenTogetherTube GuestToken`,
 				},
-			}
+			},
 		);
 
 		const cookies2: string[] = res2.headers["set-cookie"] ?? [];
@@ -247,7 +248,7 @@ async function resolveCanonicalUri(inputLbryUri: string): Promise<{
 async function rpc<T>(
 	method: string,
 	params: Record<string, unknown>,
-	axiosCfg: Partial<Parameters<typeof axios.post>[2]> = {}
+	axiosCfg: Partial<Parameters<typeof axios.post>[2]> = {},
 ): Promise<T> {
 	try {
 		if (!guestAuthToken) {
@@ -273,12 +274,12 @@ async function rpc<T>(
 					...(guestAuthToken ? { Cookie: `auth_token=${guestAuthToken}` } : {}),
 					...(axiosCfg.headers ?? {}),
 				},
-			}
+			},
 		);
 		if (!res?.data || typeof res.data.result === "undefined") {
 			const errMsg = res?.data?.error?.message ? ` (${res.data.error.message})` : "";
 			throw new OdyseeUnavailableVideo(
-				`Odysee RPC did not return a result for ${method}${errMsg}`
+				`Odysee RPC did not return a result for ${method}${errMsg}`,
 			);
 		}
 		return res.data.result;
@@ -464,7 +465,7 @@ function guessHlsCandidatesFromMp4(mp4Url: string): string[] {
 function responseFinalUrl(
 	nodeResponseUrl: string | undefined,
 	locationHeader: string | undefined,
-	fallback: string
+	fallback: string,
 ): string {
 	return nodeResponseUrl ?? locationHeader ?? fallback;
 }
@@ -525,7 +526,7 @@ async function pickBestHlsVariant(masterUrl: string): Promise<string> {
 
 // Verify stream via HEAD (fallback GET range), get final URL and MIME
 async function verifyStream(
-	url: string
+	url: string,
 ): Promise<{ ok: boolean; status?: number; mime?: string; finalUrl?: string; message?: string }> {
 	try {
 		const head = await httpc.head(url, {
@@ -537,7 +538,7 @@ async function verifyStream(
 		const finalUrl = responseFinalUrl(
 			head.request?.res?.responseUrl,
 			typeof loc === "string" ? loc : undefined,
-			url
+			url,
 		);
 
 		return {
@@ -564,7 +565,7 @@ async function verifyStream(
 			const finalUrl = responseFinalUrl(
 				get.request?.res?.responseUrl,
 				typeof loc === "string" ? loc : undefined,
-				url
+				url,
 			);
 			return {
 				ok: true,
@@ -596,16 +597,16 @@ async function verifyStream(
 
 			if (status === 401 || status === 404 || status === 403) {
 				log.debug?.(
-					`verifyStream: restricted or blocked => url=${url}, status=${status}, message=${combinedMsg}`
+					`verifyStream: restricted or blocked => url=${url}, status=${status}, message=${combinedMsg}`,
 				);
 			} else {
 				log.warn(
-					`verifyStream failed => url=${url}, status=${status}, message=${combinedMsg}`
+					`verifyStream failed => url=${url}, status=${status}, message=${combinedMsg}`,
 				);
 			}
 
 			log.debug?.(
-				`verifyStream result => url=${url}, status=${status}, message=${combinedMsg}`
+				`verifyStream result => url=${url}, status=${status}, message=${combinedMsg}`,
 			);
 			return { ok: false, status, message: combinedMsg };
 		}
@@ -613,7 +614,7 @@ async function verifyStream(
 }
 
 function isHostUnderDomain(host: string, domain: string): boolean {
-	const h = host.toLowerCase().replace(/\.$/, ""); // tolerate a trailing dot
+	const h = host.toLowerCase().replace(TRAILING_DOT_REGEX, ""); // tolerate a trailing dot
 	const d = domain.toLowerCase();
 	return h === d || h.endsWith(`.${d}`);
 }

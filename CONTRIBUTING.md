@@ -6,7 +6,7 @@ There's 2 ways you can set up your dev environment: using docker via dev contain
 
 ### Prerequisites
 
-This project targets node 20 and up. I recommend using [nvm](https://github.com/nvm-sh/nvm) to manage your node versions.
+This project targets node 22 and up. I recommend using [nvm](https://github.com/nvm-sh/nvm) to manage your node versions.
 
 I also recommend using the github cli (note this is different from git) to make PRs.
 
@@ -76,19 +76,18 @@ yarn test
 
 To run the e2e component test suite, run
 ```
-yarn run cy:run --component
+yarn test:component
 ```
 
 To run the e2e test suite, run
 ```
-yarn run cy:run
+yarn run test:e2e
 ```
 
 However, while you're developing, you'll probably want to run the tests in headed mode. To do this, run
 ```
-yarn run cy:open
+yarn run test:e2e:ui
 ```
-This works for both the component and e2e tests.
 
 ## How to run
 

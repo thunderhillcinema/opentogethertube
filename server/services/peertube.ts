@@ -4,6 +4,9 @@ import { conf } from "../ott-config.js";
 import type { Video, VideoMetadata, VideoService } from "ott-common/models/video.js";
 import { InvalidVideoIdException } from "../exceptions.js";
 
+const PEERTUBE_WATCH_PATH_REGEX = /^\/w\/\w+/;
+const PEERTUBE_WATCH_LEGACY_PATH_REGEX = /^\/videos\/watch\/[a-f0-9-]+/;
+
 interface PeertubeApiVideo {
 	uuid: string;
 	shortUUID: string;
@@ -47,10 +50,12 @@ export default class PeertubeAdapter extends ServiceAdapter {
 
 	canHandleURL(link: string): boolean {
 		const url = new URL(link);
+		// THC fork: empty allowedHosts means accept any host; also support /videos/watch/<uuid> URLs.
 		const hostOk = this.allowedHosts.length === 0 || this.allowedHosts.includes(url.host);
 		return (
 			hostOk &&
-			(/^\/w\/\w+/.test(url.pathname) || /^\/videos\/watch\/[a-f0-9-]+/.test(url.pathname))
+			(PEERTUBE_WATCH_PATH_REGEX.test(url.pathname) ||
+				PEERTUBE_WATCH_LEGACY_PATH_REGEX.test(url.pathname))
 		);
 	}
 
@@ -71,7 +76,7 @@ export default class PeertubeAdapter extends ServiceAdapter {
 		const [host, id] = videoId.split(":");
 
 		const result: AxiosResponse<PeertubeApiVideo> = await this.api.get(
-			`https://${host}/api/v1/videos/${id}`
+			`https://${host}/api/v1/videos/${id}`,
 		);
 
 		if (conf.get("info_extractor.peertube.emit_as_direct")) {

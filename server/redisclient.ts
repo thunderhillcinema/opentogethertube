@@ -16,10 +16,10 @@ function buildOptions(): RedisClientOptions<redis.RedisDefaultModules> {
 					? {
 							tls: true,
 							rejectUnauthorized: !heroku,
-					  }
+						}
 					: {},
 				database: db,
-		  }
+			}
 		: {
 				socket: {
 					port: conf.get("redis.port") ?? undefined,
@@ -28,7 +28,7 @@ function buildOptions(): RedisClientOptions<redis.RedisDefaultModules> {
 				username: conf.get("redis.username") ?? undefined,
 				password: conf.get("redis.password") ?? undefined,
 				database: conf.get("redis.db") ?? undefined,
-		  };
+			};
 	return redisOptions;
 }
 
@@ -237,6 +237,7 @@ async function collectRedisMetrics() {
 	log.silly(`Collected ${countMetricsCollected} redis metrics, skipped ${countMetricsSkipped}`);
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: biome migration
 const gaugeRedisDbsize = new Gauge({
 	name: "redis_keys_count",
 	help: "The number of keys in the database",

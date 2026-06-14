@@ -27,7 +27,7 @@ withDefaults(
 	}>(),
 	{
 		currentPosition: 0,
-	}
+	},
 );
 
 const store = useStore();
@@ -39,6 +39,7 @@ const lengthDisplay = computed(() => {
 });
 </script>
 
+<!-- biome-ignore lint/nursery/useScopedStyles: biome migration -->
 <style lang="scss">
 @use "./media-controls.scss";
 </style>

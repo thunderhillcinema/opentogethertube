@@ -123,7 +123,7 @@ function getCaptionsTracks(): CaptionTrack[] {
 	}
 
 	const determineTrackKind = (
-		roles: { value?: string }[] | null
+		roles: { value?: string }[] | null,
 	): "subtitles" | "captions" | undefined => {
 		if (!roles?.length || !roles[0]?.value) {
 			return undefined;
@@ -421,6 +421,7 @@ defineExpose({
 } satisfies MediaPlayerWithCaptions & MediaPlayerWithQuality & MediaPlayerWithPlaybackRate & MediaPlayerWithAudioBoost);
 </script>
 
+<!-- biome-ignore lint/nursery/useScopedStyles: biome migration -->
 <style lang="scss">
 .dash {
 	display: flex;

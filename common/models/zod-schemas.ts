@@ -30,7 +30,13 @@ export const OttApiRequestRoomCreateSchema = z
 			.refine(name => !RESERVED_ROOM_NAMES.includes(name), {
 				message: "not allowed (reserved)",
 			}),
-		title: z.string().max(255, "too long, must be at most 255 characters").optional(),
+		title: z
+			.string()
+			.max(255, "too long, must be at most 255 characters")
+			.refine(title => !title.includes("\n") && !title.includes("\r"), {
+				message: "title must not contain newlines",
+			})
+			.optional(),
 		description: z.string().optional(),
 		isTemporary: z.boolean().optional().default(true),
 		visibility: z.nativeEnum(Visibility).default(Visibility.Public).optional(),
@@ -96,11 +102,27 @@ export const OttApiRequestAccountRecoveryVerifySchema = z.object({
 	newPassword: z.string(),
 });
 
+export const OttApiRequestAccountUpdateSchema = z
+	.object({
+		email: z.string().email().min(3).optional(),
+		currentPassword: z.string().optional(),
+		newPassword: z.string().optional(),
+	})
+	.refine(body => body.email !== undefined || body.newPassword !== undefined, {
+		message: "At least one field must be provided",
+	});
+
 const GrantSchema = z.tuple([z.nativeEnum(Role), z.number()]);
 
 export const RoomSettingsSchema = z
 	.object({
-		title: z.string().max(254).optional(),
+		title: z
+			.string()
+			.max(254)
+			.refine(title => !title.includes("\n") && !title.includes("\r"), {
+				message: "title must not contain newlines",
+			})
+			.optional(),
 		description: z.string().optional(),
 		visibility: z.nativeEnum(Visibility).optional(),
 		queueMode: z.nativeEnum(QueueMode).optional(),

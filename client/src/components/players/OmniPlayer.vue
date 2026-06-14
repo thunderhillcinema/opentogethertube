@@ -1,46 +1,49 @@
 <template>
 	<div class="player">
 		<div class="in-player-notifs">
-			<!-- TODO: replace with v-banner when this is fixed: https://github.com/vuetifyjs/vuetify/issues/17124 -->
-			<v-sheet color="warning" density="compact" v-if="showBufferWarning">
-				<v-container fluid style="padding: 6px">
-					<div style="display: flex; align-items: center">
-						<v-progress-circular indeterminate size="16" width="2" />
-						<span>{{ $t("player.buffer-warn.spans", { ranges: renderedSpans }) }}</span>
-						<v-spacer />
-						<v-btn
-							size="x-small"
-							variant="text"
-							icon
-							@click="showBufferWarning = false"
-						>
-							<v-icon :icon="mdiClose" />
-						</v-btn>
-					</div>
-				</v-container>
-			</v-sheet>
+			<div
+				v-if="showBufferWarning"
+				class="flex items-center gap-2 bg-warning p-1.5 text-background"
+			>
+				<Spinner class="size-4" />
+				<span>{{ $t("player.buffer-warn.spans", { ranges: renderedSpans }) }}</span>
+				<div class="flex-1"></div>
+				<Button
+					variant="ghost"
+					size="icon-sm"
+					:aria-label="$t('common.close')"
+					@click="showBufferWarning = false"
+				>
+					<Icon :icon="mdiClose" class="size-4" />
+				</Button>
+			</div>
 		</div>
-		<v-alert prominent variant="tonal" class="playback-error" v-if="showPlaybackError">
+		<div v-if="showPlaybackError" class="playback-error border rounded-md">
 			<div class="playback-error-text">
-				<h1>
-					<v-icon :icon="mdiAlertCircle" />
+				<h1 class="flex items-center gap-4 text-6xl">
+					<Icon :icon="mdiAlertCircle" class="size-14" />
 					{{
 						$t(`player.playback-error-title.${currentPlaybackError?.type ?? "unknown"}`)
 					}}
 				</h1>
-				<span>{{
-					$t(`player.playback-error-message.${currentPlaybackError?.type ?? "unknown"}`)
-				}}</span>
-				<span v-if="currentPlaybackError?.message">
-					<br /><br />
-					<em>{{ currentPlaybackError?.message }}</em>
-				</span>
+				<div>
+					{{
+						$t(
+							`player.playback-error-message.${
+								currentPlaybackError?.type ?? "unknown"
+							}`,
+						)
+					}}
+				</div>
+				<div v-if="currentPlaybackError?.message">
+					{{ currentPlaybackError?.message }}
+				</div>
 			</div>
-		</v-alert>
+		</div>
 
 		<Suspense>
 			<YoutubePlayer
-				v-if="!!source && source.service == 'youtube'"
+				v-if="!!source && source.service === 'youtube'"
 				ref="player"
 				:video-id="source.id"
 				class="player"
@@ -53,7 +56,7 @@
 				@buffer-progress="onBufferProgress"
 			/>
 			<VimeoPlayer
-				v-else-if="!!source && source.service == 'vimeo'"
+				v-else-if="!!source && source.service === 'vimeo'"
 				ref="player"
 				:video-id="source.id"
 				class="player"
@@ -86,7 +89,7 @@
 				@buffer-spans="onBufferSpans"
 			/>
 			<DashPlayer
-				v-else-if="!!source && source.service == 'dash'"
+				v-else-if="!!source && source.service === 'dash'"
 				ref="player"
 				:video-url="source.dash_url ?? source.id"
 				:thumbnail="source.thumbnail"
@@ -123,7 +126,7 @@
 				@buffer-spans="onBufferSpans"
 			/>
 			<PeertubePlayer
-				v-else-if="!!source && source.service == 'peertube'"
+				v-else-if="!!source && source.service === 'peertube'"
 				ref="player"
 				:video-id="source.id"
 				class="player"
@@ -134,13 +137,13 @@
 				@buffering="onBuffering"
 				@error="onError"
 			/>
-			<div v-else class="no-video">
-				<h1>{{ $t("video.no-video") }}</h1>
+			<div v-else class="no-video rounded-md border">
+				<h1 class="text-6xl">{{ $t("video.no-video") }}</h1>
 				<span>{{ $t("video.no-video-text") }}</span>
 			</div>
 			<template #fallback>
 				<div class="no-video">
-					<v-progress-circular indeterminate />
+					<Spinner class="size-8" />
 				</div>
 			</template>
 		</Suspense>
@@ -148,6 +151,9 @@
 </template>
 
 <script lang="ts" setup>
+import { Button } from "@/components/ui/button";
+import { Icon } from "@/components/ui/icon";
+import { Spinner } from "@/components/ui/spinner";
 import { mdiAlertCircle, mdiClose } from "@mdi/js";
 import { ALL_VIDEO_SERVICES } from "ott-common";
 import { PlayerStatus } from "ott-common/models/types";
@@ -242,7 +248,7 @@ watch(
 		if (player.value && implementsAudioBoost(player.value)) {
 			player.value.setAudioBoost(v);
 		}
-	}
+	},
 );
 watch(volume.volume, v => {
 	if (player.value) {
@@ -301,7 +307,7 @@ watch(
 				currentPlaybackError.value = null;
 			}
 		}
-	}
+	},
 );
 // player events re-emitted or data stored
 async function onApiReady() {
@@ -392,7 +398,7 @@ async function onBufferSpans(spans: TimeRanges) {
 				store.state.room.playbackStartTime,
 				new Date(),
 				store.state.room.playbackPosition,
-				store.state.room.playbackSpeed
+				store.state.room.playbackSpeed,
 		  )
 		: store.state.room.playbackPosition;
 	const isInSpans = isInTimeRanges(spans, position);
@@ -426,23 +432,6 @@ const renderedSpans = computed(() => {
 	justify-content: center;
 
 	opacity: 60%;
-	border-radius: 3px;
-}
-
-.v-theme--dark,
-.v-theme--deepblue,
-.v-theme--deepred {
-	.no-video {
-		color: #fff;
-		border: 1px solid rgba(255, 255, 255, 0.5);
-	}
-}
-
-.v-theme--light {
-	.no-video {
-		color: #000;
-		border: 1px solid rgba(0, 0, 0, 0.5);
-	}
 }
 
 .player {
@@ -477,7 +466,7 @@ const renderedSpans = computed(() => {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: rgba(var(--v-theme-background), 1);
+	background-color: var(--background);
 	z-index: 1;
 }
 </style>

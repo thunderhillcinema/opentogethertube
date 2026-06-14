@@ -1,4 +1,3 @@
-// biome-ignore lint/style/useImportType: migrating to biome, maybe false positive
 import React, { useEffect, useMemo, useState } from "react";
 import type { PanelProps } from "@grafana/data";
 import type { CoreOptions } from "types";
@@ -62,7 +61,7 @@ const CoreData: React.FC<Props> = ({ options, data, width, height }) => {
 	const systemState: SystemState = useMemo(() => {
 		return options.useSampleData
 			? sampleSystemState
-			: stateSeries.fields.find(f => f.name === "Balancers")?.values[0] ?? [];
+			: (stateSeries.fields.find(f => f.name === "Balancers")?.values[0] ?? []);
 	}, [options.useSampleData, stateSeries]);
 
 	const { assign: assignColor, assignments: colorAssignments } = useColorProvider();
@@ -148,7 +147,7 @@ const CoreData: React.FC<Props> = ({ options, data, width, height }) => {
 				css`
 					width: ${width}px;
 					height: ${height}px;
-				`
+				`,
 			)}
 		>
 			{data.state === LoadingState.Loading ? <Loading /> : null}

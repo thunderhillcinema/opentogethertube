@@ -84,7 +84,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlaybackRequest,
 						state: true,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.isPlaying).toEqual(true);
 				await room.processUnauthorizedRequest(
@@ -92,7 +92,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlaybackRequest,
 						state: false,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.isPlaying).toEqual(false);
 			});
@@ -105,7 +105,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlaybackRequest,
 						state: false,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.isPlaying).toEqual(false);
 				expect(room.playbackPosition).toBeCloseTo(5, 1);
@@ -126,7 +126,7 @@ describe("Room", () => {
 					{
 						type: RoomRequestType.SkipRequest,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.currentSource).toBeNull();
 			});
@@ -142,7 +142,7 @@ describe("Room", () => {
 					{
 						type: RoomRequestType.SkipRequest,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.currentSource).toEqual({
 					service: "direct",
@@ -159,7 +159,7 @@ describe("Room", () => {
 						type: RoomRequestType.SeekRequest,
 						value: 15,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.playbackPosition).toEqual(15);
 			});
@@ -171,7 +171,7 @@ describe("Room", () => {
 						type: RoomRequestType.SeekRequest,
 						value: v as unknown as number,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.playbackPosition).toEqual(10);
 			});
@@ -194,7 +194,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlayNowRequest,
 						video: videoToPlay,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.currentSource).toEqual(videoToPlay);
 			});
@@ -211,7 +211,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlayNowRequest,
 						video: videoToPlay,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				for (const video of room.queue.items) {
 					expect(video).not.toEqual(videoToPlay);
@@ -231,7 +231,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlayNowRequest,
 						video: videoToPlay,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(_.pick(room.queue.items[0], "service", "id")).toEqual({
 					service: "direct",
@@ -256,7 +256,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlayNowRequest,
 						video: videoToPlay,
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 				expect(room.currentSource).toEqual(videoToPlay);
 				expect(room.playbackPosition).toEqual(0);
@@ -274,7 +274,7 @@ describe("Room", () => {
 							subtitleUrl,
 						},
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 
 				expect(room.currentSource).toEqual({
@@ -293,8 +293,8 @@ describe("Room", () => {
 								subtitleUrl: "https://example.com/subtitles.srt",
 							},
 						},
-						{ token: user.token }
-					)
+						{ token: user.token },
+					),
 				).rejects.toThrow("Subtitle URL must end with .vtt");
 			});
 		});
@@ -321,7 +321,7 @@ describe("Room", () => {
 							subtitleUrl,
 						},
 					},
-					{ token: user.token }
+					{ token: user.token },
 				);
 
 				expect(room.queue).toHaveLength(1);
@@ -343,8 +343,8 @@ describe("Room", () => {
 								subtitleUrl: "https://example.com/subtitles.srt",
 							},
 						},
-						{ token: user.token }
-					)
+						{ token: user.token },
+					),
 				).rejects.toThrow("Subtitle URL must end with .vtt");
 			});
 		});
@@ -357,7 +357,7 @@ describe("Room", () => {
 						video: { service: "direct", id: "abc123" },
 						add: true,
 					},
-					{ username: "test", role: Role.Owner, clientId: "1234" }
+					{ username: "test", role: Role.Owner, clientId: "1234" },
 				);
 				expect(Array.from(room.votes.get("directabc123")!)).toEqual(["1234"]);
 			});
@@ -386,7 +386,7 @@ describe("Room", () => {
 					{
 						type: RoomRequestType.ShuffleRequest,
 					},
-					{ username: "test", role: Role.Owner, clientId: "1234" }
+					{ username: "test", role: Role.Owner, clientId: "1234" },
 				);
 				expect(shuffleSpy).toHaveBeenCalled();
 				expect(room.queue).toHaveLength(5);
@@ -400,7 +400,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlaybackSpeedRequest,
 						speed: 1.5,
 					},
-					{ username: "test", role: Role.Owner, clientId: "1234" }
+					{ username: "test", role: Role.Owner, clientId: "1234" },
 				);
 				expect(room.playbackSpeed).toEqual(1.5);
 
@@ -409,7 +409,7 @@ describe("Room", () => {
 						type: RoomRequestType.PlaybackSpeedRequest,
 						speed: 1,
 					},
-					{ username: "test", role: Role.Owner, clientId: "1234" }
+					{ username: "test", role: Role.Owner, clientId: "1234" },
 				);
 				expect(room.playbackSpeed).toEqual(1);
 			});
@@ -429,7 +429,7 @@ describe("Room", () => {
 					{
 						type: RoomRequestType.RestoreQueueRequest,
 					},
-					{ username: "test", role: Role.Owner, clientId: "1234" }
+					{ username: "test", role: Role.Owner, clientId: "1234" },
 				);
 				expect(room.queue.items).toEqual(prevQueue);
 				expect(room.prevQueue).toBeNull();
@@ -448,7 +448,7 @@ describe("Room", () => {
 						type: RoomRequestType.RestoreQueueRequest,
 						discard: true,
 					},
-					{ username: "test", role: Role.Owner, clientId: "1234" }
+					{ username: "test", role: Role.Owner, clientId: "1234" },
 				);
 				expect(room.queue.items).not.toEqual(room.prevQueue);
 				expect(room.queue.items).toEqual([]);
@@ -474,18 +474,18 @@ describe("Room", () => {
 			]);
 		});
 
-		it.each([QueueMode.Manual, QueueMode.Vote])(
-			"should consume the current item when mode is %s",
-			async mode => {
-				room.queueMode = mode;
-				await room.dequeueNext();
-				expect(room.currentSource).toEqual({
-					service: "direct",
-					id: "video2",
-				});
-				expect(room.queue).toHaveLength(0);
-			}
-		);
+		it.each([
+			QueueMode.Manual,
+			QueueMode.Vote,
+		])("should consume the current item when mode is %s", async mode => {
+			room.queueMode = mode;
+			await room.dequeueNext();
+			expect(room.currentSource).toEqual({
+				service: "direct",
+				id: "video2",
+			});
+			expect(room.queue).toHaveLength(0);
+		});
 
 		it.each([QueueMode.Loop])("should requeue the current item when mode is %s", async mode => {
 			room.queueMode = mode;
@@ -530,45 +530,41 @@ describe("Room", () => {
 				expectedQueueItem: { service: "direct", id: "video2" },
 				expectedPlaybackPosition: 0,
 			},
-		])(
-			"should clear trim metadata when mode is $mode",
-			async ({
-				mode,
-				expectedCurrentSource,
-				expectedQueueItem,
-				expectedPlaybackPosition,
-			}) => {
-				room.queueMode = mode;
-				room.currentSource = {
-					service: "direct",
-					id: "video",
-					startAt: 10,
-					endAt: 20,
-				};
-				room.playbackPosition = 10;
-				await room.dequeueNext();
+		])("should clear trim metadata when mode is $mode", async ({
+			mode,
+			expectedCurrentSource,
+			expectedQueueItem,
+			expectedPlaybackPosition,
+		}) => {
+			room.queueMode = mode;
+			room.currentSource = {
+				service: "direct",
+				id: "video",
+				startAt: 10,
+				endAt: 20,
+			};
+			room.playbackPosition = 10;
+			await room.dequeueNext();
 
-				expect(room.currentSource).toEqual(expectedCurrentSource);
-				expect(room.playbackPosition).toEqual(expectedPlaybackPosition);
-				expect(room.queue).toHaveLength(1);
-				expect(room.queue.items[0]).toEqual(expectedQueueItem);
-			}
-		);
+			expect(room.currentSource).toEqual(expectedCurrentSource);
+			expect(room.playbackPosition).toEqual(expectedPlaybackPosition);
+			expect(room.queue).toHaveLength(1);
+			expect(room.queue.items[0]).toEqual(expectedQueueItem);
+		});
 
-		it.each([QueueMode.Loop])(
-			"should requeue the current item when mode is %s, with empty queue",
-			async mode => {
-				room.queueMode = mode;
-				room.queue = new VideoQueue();
-				expect(room.queue).toHaveLength(0);
-				await room.dequeueNext();
-				expect(room.currentSource).toEqual({
-					service: "direct",
-					id: "video",
-				});
-				expect(room.queue).toHaveLength(0);
-			}
-		);
+		it.each([
+			QueueMode.Loop,
+		])("should requeue the current item when mode is %s, with empty queue", async mode => {
+			room.queueMode = mode;
+			room.queue = new VideoQueue();
+			expect(room.queue).toHaveLength(0);
+			await room.dequeueNext();
+			expect(room.currentSource).toEqual({
+				service: "direct",
+				id: "video",
+			});
+			expect(room.queue).toHaveLength(0);
+		});
 	});
 
 	it("should be able to get role in unowned room", async () => {
@@ -645,7 +641,7 @@ describe("Room", () => {
 					username: "user",
 					role: Role.UnregisteredUser,
 					clientId: "user",
-				}
+				},
 			);
 
 			expect(room.currentSource).toEqual({ service: "direct", id: "foo" });
@@ -672,7 +668,7 @@ describe("Room", () => {
 					username: "user",
 					role: Role.UnregisteredUser,
 					clientId: "user",
-				}
+				},
 			);
 			await room.processRequest(
 				{
@@ -682,7 +678,7 @@ describe("Room", () => {
 					username: "user2",
 					role: Role.UnregisteredUser,
 					clientId: "user2",
-				}
+				},
 			);
 
 			expect(room.currentSource).toEqual(null);

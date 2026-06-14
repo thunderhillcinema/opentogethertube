@@ -107,14 +107,15 @@ export async function main() {
 	};
 	if (
 		conf.get("env") === "production" &&
+		// biome-ignore lint/complexity/noExtraBooleanCast: biome migration
 		!!conf.get("hostname") &&
 		!conf.get("hostname").includes("localhost") &&
 		conf.get("trust_proxy") > 0
 	) {
 		log.warn(
 			`Trusting ${conf.get(
-				"trust_proxy"
-			)} layers of reverse proxy, X-Forwarded-* headers will be trusted.`
+				"trust_proxy",
+			)} layers of reverse proxy, X-Forwarded-* headers will be trusted.`,
 		);
 		app.set("trust proxy", conf.get("trust_proxy"));
 		// @ts-expect-error
@@ -135,7 +136,7 @@ export async function main() {
 				maxAge: "1 year",
 				redirect: false,
 				index: false,
-			})
+			}),
 		);
 	} else {
 		log.warn("no dist folder found");
@@ -157,8 +158,8 @@ export async function main() {
 				scope: ["identify"],
 				passReqToCallback: true,
 			},
-			usermanager.authCallbackDiscord
-		)
+			usermanager.authCallbackDiscord,
+		),
 	);
 	passport.use(
 		new BearerStrategy(async (token, done) => {
@@ -170,7 +171,7 @@ export async function main() {
 				return done(null, ottsession);
 			}
 			return done(null, false);
-		})
+		}),
 	);
 	passport.serializeUser(usermanager.serializeUser);
 	passport.deserializeUser(usermanager.deserializeUser);
@@ -186,7 +187,7 @@ export async function main() {
 		bodyParser.urlencoded({
 			// to support URL-encoded bodies
 			extended: true,
-		})
+		}),
 	);
 
 	app.use((req, res, next) => {
@@ -218,7 +219,7 @@ export async function main() {
 		log.warn("no dist folder found, run `yarn build` to build the client");
 		app.get("*", (req, res) => {
 			res.status(404).send(
-				"File not found - Client files not found. Run `yarn build` to build the client."
+				"File not found - Client files not found. Run `yarn build` to build the client.",
 			);
 		});
 	}

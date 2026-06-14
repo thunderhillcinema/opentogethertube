@@ -25,12 +25,12 @@ export type RoomManagerEvents = "publish" | "load" | "unload" | "command";
 export type RoomManagerEventHandlers<E> = E extends "publish"
 	? (roomName: string, message: ServerMessage) => void
 	: E extends "load"
-	? (roomName: string) => void
-	: E extends "unload"
-	? (roomName: string, reason: UnloadReason) => void
-	: E extends "command"
-	? (roomName: string, command: ClientManagerCommand) => void
-	: never;
+		? (roomName: string) => void
+		: E extends "unload"
+			? (roomName: string, reason: UnloadReason) => void
+			: E extends "command"
+				? (roomName: string, command: ClientManagerCommand) => void
+				: never;
 const bus = new EventEmitter();
 
 async function addRoom(room: Room) {
@@ -44,7 +44,7 @@ async function addRoom(room: Room) {
 	bus.emit("load", room.name);
 }
 
-let updaterInterval: NodeJS.Timer | null = null;
+let updaterInterval: ReturnType<typeof setInterval> | null = null;
 export async function start() {
 	log.info("Starting room manager");
 
@@ -58,7 +58,7 @@ export async function shutdown() {
 		updaterInterval = null;
 	}
 	await Promise.all(
-		rooms.map(room => unloadRoom(room.name, UnloadReason.Shutdown, { preserveRedis: true }))
+		rooms.map(room => unloadRoom(room.name, UnloadReason.Shutdown, { preserveRedis: true })),
 	);
 }
 
@@ -128,7 +128,7 @@ export async function createRoom(options: Partial<RoomOptions> & { name: string 
  */
 export async function getRoom(
 	roomName: string,
-	options: { mustAlreadyBeLoaded?: boolean } = {}
+	options: { mustAlreadyBeLoaded?: boolean } = {},
 ): Promise<Result<Room, RoomNotFoundException | RoomAlreadyLoadedException>> {
 	_.defaults(options, {
 		mustAlreadyBeLoaded: false,
@@ -167,10 +167,10 @@ export async function getRoom(
 export async function unloadRoom(
 	room: string | Room,
 	reason: UnloadReason,
-	options: Partial<{ preserveRedis: boolean }> = {}
+	options: Partial<{ preserveRedis: boolean }> = {},
 ): Promise<void> {
 	const opts = _.defaults(options, {
-		preserveRedis: false,
+		preserveRedis: reason === UnloadReason.Commanded,
 	});
 
 	let idx = -1;
@@ -228,6 +228,7 @@ export function on<E extends RoomManagerEvents>(event: E, listener: RoomManagerE
 	bus.on(event, listener);
 }
 
+// biome-ignore lint/correctness/noUnusedVariables: biome migration
 const gaugeRoomCount = new Gauge({
 	name: "ott_room_count",
 	help: "The number of loaded rooms.",
@@ -257,6 +258,7 @@ const gaugeRoomCount = new Gauge({
 	},
 });
 
+// biome-ignore lint/correctness/noUnusedVariables: biome migration
 const gaugeUsersInRooms = new Gauge({
 	name: "ott_users_in_rooms",
 	help: "The number of users that the room manager thinks are in rooms.",

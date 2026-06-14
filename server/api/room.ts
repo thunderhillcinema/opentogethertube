@@ -56,7 +56,7 @@ router.get("/list", (req, res) => {
 		log.warn(
 			`Unauthorized request to room list endpoint: ip=${req.ip} forward-ip=${(
 				req.headers["x-forwarded-for"] ?? "not-present"
-			).toString()} user-agent=${req.headers["user-agent"]}`
+			).toString()} user-agent=${req.headers["user-agent"]}`,
 		);
 		res.status(400).json({
 			success: false,
@@ -87,7 +87,7 @@ router.get("/list", (req, res) => {
 
 const generateRoom: RequestHandler<unknown, OttResponseBody<OttApiResponseRoomGenerate>> = async (
 	req,
-	res
+	res,
 ) => {
 	if (!conf.get("room.enable_create_temporary")) {
 		throw new FeatureDisabledException("Temporary rooms are disabled.");
@@ -144,7 +144,7 @@ const createRoom: RequestHandler<
 	log.info(
 		`${body.isTemporary ? "Temporary" : "Permanent"} room created: name=${body.name} ip=${
 			req.ip
-		} user-agent=${req.headers["user-agent"]}`
+		} user-agent=${req.headers["user-agent"]}`,
 	);
 	res.status(201).json({
 		success: true,
@@ -153,7 +153,7 @@ const createRoom: RequestHandler<
 
 const getRoom: RequestHandler<{ name: string }, OttApiResponseGetRoom, unknown> = async (
 	req,
-	res
+	res,
 ) => {
 	const room = (await roommanager.getRoom(req.params.name)).unwrap();
 	const resp: OttApiResponseGetRoom = {
@@ -170,7 +170,7 @@ const getRoom: RequestHandler<{ name: string }, OttApiResponseGetRoom, unknown> 
 				"autoSkipSegmentCategories",
 				"restoreQueueBehavior",
 				"enableVoteSkip",
-			])
+			]),
 		),
 		queue: room.queue.items,
 		currentSource: room.currentSource,
@@ -185,7 +185,7 @@ function isClaimRequest(request: OttApiRequestPatchRoom): request is OttClaimReq
 
 const patchRoom: RequestHandler<{ name: string }, unknown, OttApiRequestPatchRoom> = async (
 	req,
-	res
+	res,
 ) => {
 	const body = OttApiRequestPatchRoomSchema.parse(req.body);
 
@@ -388,7 +388,7 @@ const addVote: RequestHandler<{ name: string }, unknown, OttApiRequestVote> = as
 
 const removeVote: RequestHandler<{ name: string }, unknown, OttApiRequestVote> = async (
 	req,
-	res
+	res,
 ) => {
 	const body = OttApiRequestVoteSchema.parse(req.body);
 
@@ -472,7 +472,7 @@ const removeFromQueue: RequestHandler<
 			type: RoomRequestType.RemoveRequest,
 			video: { service: body.service, id: body.id },
 		},
-		{ token: req.token! }
+		{ token: req.token! },
 	);
 	res.json({
 		success: true,
@@ -539,6 +539,7 @@ const errorHandler: ErrorRequestHandler = (err: Error, req, res) => {
 				},
 			});
 		} else if (err.name === "FeatureDisabledException") {
+			// biome-ignore lint/correctness/noUnusedVariables: biome migration
 			const e = err as FeatureDisabledException;
 			res.status(403).json({
 				success: false,

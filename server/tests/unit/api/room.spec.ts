@@ -22,6 +22,8 @@ import { conf } from "../../../../server/ott-config.js";
 import type { User } from "../../../models/user.js";
 import { UnloadReason } from "../../../generated.js";
 
+const JSON_CONTENT_TYPE_REGEX = /json/;
+
 expect.extend({
 	toBeRoomNotFound(error) {
 		if (typeof error === "string") {
@@ -126,38 +128,38 @@ describe("Room API", () => {
 			}
 		});
 
-		it.each([Visibility.Public, Visibility.Unlisted])(
-			"should get %s room metadata",
-			async (visibility: Visibility) => {
-				await roommanager.createRoom({
-					name: "test1",
-					isTemporary: true,
-					visibility: visibility,
-				});
+		it.each([
+			Visibility.Public,
+			Visibility.Unlisted,
+		])("should get %s room metadata", async (visibility: Visibility) => {
+			await roommanager.createRoom({
+				name: "test1",
+				isTemporary: true,
+				visibility: visibility,
+			});
 
-				const resp = await request(app)
-					.get("/api/room/test1")
-					.auth(token, { type: "bearer" })
-					.set({ Authorization: "Bearer foobar" })
-					.expect("Content-Type", /json/)
-					.expect(200);
+			const resp = await request(app)
+				.get("/api/room/test1")
+				.auth(token, { type: "bearer" })
+				.set({ Authorization: "Bearer foobar" })
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
+				.expect(200);
 
-				// TODO: This is currently not type-checked. Ideally, we would be able to type-check the response using a definition from `common`.
-				expect(resp.body).toMatchObject({
-					name: "test1",
-					title: "",
-					description: "",
-					queueMode: QueueMode.Manual,
-					visibility: visibility,
-				});
-			}
-		);
+			// TODO: This is currently not type-checked. Ideally, we would be able to type-check the response using a definition from `common`.
+			expect(resp.body).toMatchObject({
+				name: "test1",
+				title: "",
+				description: "",
+				queueMode: QueueMode.Manual,
+				visibility: visibility,
+			});
+		});
 
 		it("should fail if the room does not exist", async () => {
 			const resp = await request(app)
 				.get("/api/room/test1")
 				.auth(token, { type: "bearer" })
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(404);
 			expect(resp.body.success).toEqual(false);
 			expect(resp.body.error).toBeRoomNotFound();
@@ -195,23 +197,23 @@ describe("Room API", () => {
 			}
 		});
 
-		it.each([Visibility.Public, Visibility.Unlisted])(
-			"should create %s room",
-			async (visibility: Visibility) => {
-				const resp = await request(app)
-					.post("/api/room/create")
-					.auth(token, { type: "bearer" })
-					.send({ name: "test1", isTemporary: true, visibility: visibility })
-					.expect("Content-Type", /json/)
-					.expect(201);
-				expect(resp.body.success).toBe(true);
-				expect(roommanager.rooms[0]).toMatchObject({
-					name: "test1",
-					isTemporary: true,
-					visibility: visibility,
-				});
-			}
-		);
+		it.each([
+			Visibility.Public,
+			Visibility.Unlisted,
+		])("should create %s room", async (visibility: Visibility) => {
+			const resp = await request(app)
+				.post("/api/room/create")
+				.auth(token, { type: "bearer" })
+				.send({ name: "test1", isTemporary: true, visibility: visibility })
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
+				.expect(201);
+			expect(resp.body.success).toBe(true);
+			expect(roommanager.rooms[0]).toMatchObject({
+				name: "test1",
+				isTemporary: true,
+				visibility: visibility,
+			});
+		});
 
 		it.each([
 			[{ isTemporary: true }],
@@ -237,13 +239,27 @@ describe("Room API", () => {
 					isTemporary: true,
 				},
 			],
+			[
+				{
+					name: "test2",
+					title: "Title with\nnewline",
+					isTemporary: true,
+				},
+			],
+			[
+				{
+					name: "test3",
+					title: "Title with\r\ncarriage return",
+					isTemporary: true,
+				},
+			],
 			[{ name: "test1", isTemporary: true, visibility: "invalid" }],
 		])("should fail to create room for validation errors: %s", async body => {
 			const resp = await request(app)
 				.post("/api/room/create")
 				.auth(token, { type: "bearer" })
 				.send(body)
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(400);
 			expect(resp.body.success).toEqual(false);
 			expect(resp.body.error).toMatchObject({
@@ -256,7 +272,7 @@ describe("Room API", () => {
 				.post("/api/room/create")
 				.auth(token, { type: "bearer" })
 				.send({ name: "testnoowner", isTemporary: false })
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(201);
 			expect(resp.body.success).toEqual(true);
 			expect(roommanager.rooms[0]).toMatchObject({
@@ -276,7 +292,7 @@ describe("Room API", () => {
 				.post("/api/room/create")
 				.auth(token, { type: "bearer" })
 				.send({ name: "testowner" })
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(201);
 			expect(resp.body.success).toEqual(true);
 			expect(_.pick(roommanager.rooms[0], "name", "owner.id", "owner.email")).toMatchObject({
@@ -298,7 +314,7 @@ describe("Room API", () => {
 
 		for (const [path, body] of requests) {
 			it(`should fail to create room if feature is disabled: Endpoint ${path} body ${JSON.stringify(
-				body
+				body,
 			)}`, async () => {
 				conf.set("room.enable_create_temporary", false);
 				conf.set("room.enable_create_permanent", false);
@@ -307,7 +323,7 @@ describe("Room API", () => {
 					.post(path)
 					.auth(token, { type: "bearer" })
 					.send(body)
-					.expect("Content-Type", /json/)
+					.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 					.expect(403);
 				expect(resp.body.success).toEqual(false);
 				expect(resp.body.error).toMatchObject({
@@ -355,6 +371,16 @@ describe("Room API", () => {
 			],
 			[
 				{
+					title: "Title with\nnewline",
+				},
+			],
+			[
+				{
+					title: "Title with\r\ncarriage return newline",
+				},
+			],
+			[
+				{
 					autoSkipSegmentCategories: ["invalid", "intro"],
 				},
 			],
@@ -363,7 +389,7 @@ describe("Room API", () => {
 				.patch("/api/room/foo")
 				.auth(token, { type: "bearer" })
 				.send(body)
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(400);
 			expect(resp.body.success).toEqual(false);
 			expect(resp.body.error).toMatchObject({
@@ -398,24 +424,21 @@ describe("Room API", () => {
 				],
 			],
 			[[], []],
-		])(
-			"should update autoSkipSegmentCategories with only unique valid auto-skip segment categories",
-			async (requestAutoSkipSegmentCategories, savedAutoSkipSegmentCategories) => {
-				const resp = await request(app)
-					.patch("/api/room/foo")
-					.auth(token, { type: "bearer" })
-					.send({
-						autoSkipSegmentCategories: requestAutoSkipSegmentCategories,
-					})
-					.expect("Content-Type", /json/)
-					.expect(200);
-				expect(resp.body.success).toEqual(true);
-				const roomResult = await roommanager.getRoom("foo");
-				expect(_.pick(roomResult.value, "autoSkipSegmentCategories")).toMatchObject({
-					autoSkipSegmentCategories: savedAutoSkipSegmentCategories,
-				});
-			}
-		);
+		])("should update autoSkipSegmentCategories with only unique valid auto-skip segment categories", async (requestAutoSkipSegmentCategories, savedAutoSkipSegmentCategories) => {
+			const resp = await request(app)
+				.patch("/api/room/foo")
+				.auth(token, { type: "bearer" })
+				.send({
+					autoSkipSegmentCategories: requestAutoSkipSegmentCategories,
+				})
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
+				.expect(200);
+			expect(resp.body.success).toEqual(true);
+			const roomResult = await roommanager.getRoom("foo");
+			expect(_.pick(roomResult.value, "autoSkipSegmentCategories")).toMatchObject({
+				autoSkipSegmentCategories: savedAutoSkipSegmentCategories,
+			});
+		});
 	});
 
 	describe("PATCH /api/room/:name/queue", () => {
@@ -462,7 +485,7 @@ describe("Room API", () => {
 					id: "foo",
 					subtitleUrl: "https://example.com/subtitles.vtt",
 				})
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(200);
 
 			expect(resp.body.success).toEqual(true);
@@ -475,7 +498,7 @@ describe("Room API", () => {
 						id: "foo",
 						subtitleUrl: "https://example.com/subtitles.vtt",
 					}),
-				])
+				]),
 			);
 		});
 
@@ -496,7 +519,7 @@ describe("Room API", () => {
 					id: "foo",
 					subtitleUrl: "https://example.com/subtitles.srt",
 				})
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(400);
 
 			expect(resp.body.success).toEqual(false);
@@ -516,7 +539,7 @@ describe("Room API", () => {
 				.auth(token, { type: "bearer" })
 				.set({ Authorization: "Bearer foobar" })
 				.send({ service: "direct", id: "foo", subtitleUrl: 123 })
-				.expect("Content-Type", /json/)
+				.expect("Content-Type", JSON_CONTENT_TYPE_REGEX)
 				.expect(400);
 
 			expect(resp.body.success).toEqual(false);

@@ -19,6 +19,8 @@ import { conf } from "../ott-config.js";
 import { CustomMediaManifestSchema } from "ott-common/models/zod-schemas.js";
 
 const log = getLogger("direct");
+const DIRECT_MEDIA_URL_REGEX =
+	/\/*\.(mp(3|4v?)|mpg4|webm|flv|mkv|avi|wmv|qt|mov|ogv|m4v|h26[1-4]|ogg|json)$/;
 
 export default class DirectVideoAdapter extends ServiceAdapter {
 	ffprobe: FfprobeStrategy;
@@ -60,9 +62,7 @@ export default class DirectVideoAdapter extends ServiceAdapter {
 
 	canHandleURL(link: string): boolean {
 		const url = URL.parse(link);
-		return /\/*\.(mp(3|4v?)|mpg4|webm|flv|mkv|avi|wmv|qt|mov|ogv|m4v|h26[1-4]|ogg|json)$/.test(
-			(url.path ?? "/").split("?")[0]
-		);
+		return DIRECT_MEDIA_URL_REGEX.test((url.path ?? "/").split("?")[0]);
 	}
 
 	getDuration(fileInfo): number {
@@ -114,7 +114,7 @@ export default class DirectVideoAdapter extends ServiceAdapter {
 			if (!response.ok) {
 				log.error(`Failed to fetch manifest at ${link}: ${response.status}`);
 				throw new MissingMetadataException(
-					`Failed to fetch the media manifest (HTTP ${response.status}). Please check that the URL is accessible.`
+					`Failed to fetch the media manifest (HTTP ${response.status}). Please check that the URL is accessible.`,
 				);
 			}
 			json = await response.json();
@@ -169,10 +169,10 @@ export default class DirectVideoAdapter extends ServiceAdapter {
 		// Final fallback: check if we have video/audio streams and use a generic supported MIME type
 		if (!mime || !isSupportedMimeType(mime)) {
 			const hasVideo = fileInfo.streams?.some(
-				(s: { codec_type: string }) => s.codec_type === "video"
+				(s: { codec_type: string }) => s.codec_type === "video",
 			);
 			const hasAudio = fileInfo.streams?.some(
-				(s: { codec_type: string }) => s.codec_type === "audio"
+				(s: { codec_type: string }) => s.codec_type === "audio",
 			);
 			// Use generic MIME types that are known to be supported
 			if (hasVideo) {

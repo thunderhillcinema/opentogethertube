@@ -1,13 +1,15 @@
 import { URL } from "node:url";
 import { OttException } from "ott-common/exceptions.js";
 
+const FILE_EXTENSION_PATH_REGEX = /\/*\.([a-z0-9])$/i;
+
 // export type OttException = UnsupportedServiceException | InvalidAddPreviewInputException | OutOfQuotaException | InvalidVideoIdException | FeatureDisabledException | UnsupportedMimeTypeException | LocalFileException | MissingMetadataException | IncompleteServiceAdapterException | PermissionDeniedException | ImpossiblePromotionException | InvalidRoleException | RoomNotFoundException | RoomAlreadyLoadedException | RoomNameTakenException | VideoAlreadyQueuedException | VideoNotFoundException | BadApiArgumentException
 
 export class UnsupportedServiceException extends OttException {
 	constructor(url: string) {
 		let msg = "";
 		const parsed = new URL(url);
-		if (parsed.pathname && /\/*\.([a-z0-9])$/i.exec(parsed.pathname.split("?")[0])) {
+		if (parsed.pathname && FILE_EXTENSION_PATH_REGEX.exec(parsed.pathname.split("?")[0])) {
 			msg = `If this is a direct link to a video file, please open a "service support request" issue on github, so we can see if this file format works. Otherwise, "${url}" is not a valid URL for any supported service.`;
 		} else {
 			msg = `"${url}" is not a valid URL for any supported service.`;
@@ -82,7 +84,7 @@ export class UpstreamInvidiousException extends Error {
 			? "The video provider is rate limiting requests right now. Please try again later or choose another instance."
 			: `The video provider returned an error${
 					opts.status ? ` (HTTP ${opts.status})` : ""
-			  }. Please try again later.`;
+				}. Please try again later.`;
 
 		super(userMessage);
 		this.name = "UpstreamInvidiousException";
@@ -98,7 +100,7 @@ export class InvalidAddPreviewInputException extends OttException {
 
 	constructor(minLength: number) {
 		super(
-			`Your search query must at least ${minLength} characters, or supply a Youtube video, playlist, or channel link.`
+			`Your search query must at least ${minLength} characters, or supply a Youtube video, playlist, or channel link.`,
 		);
 	}
 }
@@ -122,7 +124,7 @@ export class OutOfQuotaException extends OttException {
 	constructor(service: string) {
 		if (service === "youtube") {
 			super(
-				`We don't have enough Youtube API quota to complete the request. We currently have a limit of 50,000 quota per day.`
+				`We don't have enough Youtube API quota to complete the request. We currently have a limit of 50,000 quota per day.`,
 			);
 		} else if (service === "googledrive") {
 			super(`We don't have enough Google Drive API quota to complete the request.`);
@@ -173,7 +175,7 @@ export class LocalFileException extends OttException {
 
 	constructor() {
 		super(
-			`The video URL provided references a local file. It is not possible to play videos on your computer, nor files located on the server. Videos must be hosted somewhere all users in the room can access.`
+			`The video URL provided references a local file. It is not possible to play videos on your computer, nor files located on the server. Videos must be hosted somewhere all users in the room can access.`,
 		);
 	}
 }
@@ -184,7 +186,7 @@ export class MissingMetadataException extends OttException {
 	constructor(message?: string) {
 		super(
 			message ??
-				`The video provided is missing metadata required to let playback work correctly (probably length). For best results, reencode the video as an mp4.`
+				`The video provided is missing metadata required to let playback work correctly (probably length). For best results, reencode the video as an mp4.`,
 		);
 	}
 }
@@ -272,7 +274,7 @@ export class ClientNotFoundInRoomException extends OttException {
 
 	constructor(roomName: string) {
 		super(
-			`The server was unable to find a client in the room "${roomName}" associated with the session. This might mean that your browser isn't saving cookies, try refreshing. If you aren't connected to the room, reconnect to the room and try again. This could also mean that the room does not exist at all.`
+			`The server was unable to find a client in the room "${roomName}" associated with the session. This might mean that your browser isn't saving cookies, try refreshing. If you aren't connected to the room, reconnect to the room and try again. This could also mean that the room does not exist at all.`,
 		);
 	}
 }

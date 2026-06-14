@@ -9,6 +9,11 @@ import { conf } from "../ott-config.js";
 import { ServiceAdapter, type VideoRequest } from "../serviceadapter.js";
 
 const log = getLogger("pluto");
+const PLUTO_URL_REGEX =
+	/https?:\/\/(www\.)?pluto\.tv\/[a-z]{2}\/on-demand\/(movies|series)\/(.*)\/?$/;
+const PLUTO_SERIES_PATH_REGEX = /\/(movies|series)\/([a-z0-9]+)/;
+const PLUTO_EPISODE_PATH_REGEX = /episode\/([a-z0-9]+)/;
+const PLUTO_SEASON_PATH_REGEX = /season\/(\d+)/;
 
 export interface PlutoParsedIds {
 	type: "series" | "movies";
@@ -35,9 +40,7 @@ export default class PlutoAdapter extends ServiceAdapter {
 	}
 
 	canHandleURL(link: string): boolean {
-		return /https?:\/\/(www\.)?pluto\.tv\/[a-z]{2}\/on-demand\/(movies|series)\/(.*)\/?$/.test(
-			link
-		);
+		return PLUTO_URL_REGEX.test(link);
 	}
 
 	isCollectionURL(link: string): boolean {
@@ -46,7 +49,7 @@ export default class PlutoAdapter extends ServiceAdapter {
 
 	parseUrl(url: string): PlutoParsedIds {
 		const parsed = new URL(url);
-		const seriesMatch = parsed.pathname.match(/\/(movies|series)\/([a-z0-9]+)/);
+		const seriesMatch = parsed.pathname.match(PLUTO_SERIES_PATH_REGEX);
 		const videoType: "series" | "movies" | undefined = seriesMatch
 			? (seriesMatch[1] as "series" | "movies")
 			: undefined;
@@ -55,13 +58,13 @@ export default class PlutoAdapter extends ServiceAdapter {
 			throw new Error(`Unable to parse series from ${url}`);
 		}
 		let episode: string | undefined;
-		const episodeMatch = parsed.pathname.match(/episode\/([a-z0-9]+)/);
+		const episodeMatch = parsed.pathname.match(PLUTO_EPISODE_PATH_REGEX);
 		if (episodeMatch) {
 			episode = episodeMatch[1];
 		}
 		let season: number | undefined;
 		if (!episodeMatch) {
-			const seasonMatch = parsed.pathname.match(/season\/(\d+)/);
+			const seasonMatch = parsed.pathname.match(PLUTO_SEASON_PATH_REGEX);
 			if (seasonMatch) {
 				season = parseInt(seasonMatch[1], 10);
 			}
@@ -203,14 +206,14 @@ export default class PlutoAdapter extends ServiceAdapter {
 			const ep = this.findEpisodeInVod(plutoIds.subid, vodOrEpisode);
 			if (!ep) {
 				throw new Error(
-					`Unable to find episode ${plutoIds.subid} in VOD ${vodOrEpisode.id}`
+					`Unable to find episode ${plutoIds.subid} in VOD ${vodOrEpisode.id}`,
 				);
 			}
 			vodOrEpisode = ep;
 		}
 
 		const hlsUrl = new URL(
-			resp.servers.stitcher + this.parseStitchedIntoHlsPath(vodOrEpisode.stitched)
+			resp.servers.stitcher + this.parseStitchedIntoHlsPath(vodOrEpisode.stitched),
 		);
 		hlsUrl.search = this.buildHlsQueryParams(resp).toString();
 		const proxy = conf.get("cors_proxy");
@@ -232,7 +235,7 @@ export default class PlutoAdapter extends ServiceAdapter {
 
 	private parseBootResponseIntoSeries(
 		plutoIds: PlutoParsedIds,
-		resp: PlutoBootResponse
+		resp: PlutoBootResponse,
 	): Video[] {
 		if (!resp.servers.stitcher) {
 			throw new Error("No stitcher server found in boot response");
@@ -244,7 +247,7 @@ export default class PlutoAdapter extends ServiceAdapter {
 			throw new Error(`Unable to find VOD ${plutoIds.id} in boot response`);
 		}
 		const seasons = (vod.seasons ?? []).filter(
-			s => !plutoIds.season || s.number === plutoIds.season
+			s => !plutoIds.season || s.number === plutoIds.season,
 		);
 
 		const videos: Video[] = [];
@@ -252,7 +255,7 @@ export default class PlutoAdapter extends ServiceAdapter {
 			let episodeNumber = 1;
 			for (const episode of season.episodes) {
 				const hlsUrl = new URL(
-					resp.servers.stitcher + this.parseStitchedIntoHlsPath(episode.stitched)
+					resp.servers.stitcher + this.parseStitchedIntoHlsPath(episode.stitched),
 				);
 				hlsUrl.search = this.buildHlsQueryParams(resp).toString();
 				const proxy = conf.get("cors_proxy");

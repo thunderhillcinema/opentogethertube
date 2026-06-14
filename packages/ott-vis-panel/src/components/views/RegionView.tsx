@@ -1,4 +1,3 @@
-// biome-ignore lint/style/useImportType: migrating to biome, maybe false positive
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 import type { SystemState } from "ott-vis";
@@ -71,7 +70,7 @@ export const RegionView: React.FC<Props> = ({ systemState, assignColor, width, h
 			.select(".texts")
 			.selectAll("text")
 			.data(
-				tree.descendants().filter(d => d.data.group !== "root" && d.data.group !== "room")
+				tree.descendants().filter(d => d.data.group !== "root" && d.data.group !== "room"),
 			)
 			.join("text")
 			.attr("class", "text")

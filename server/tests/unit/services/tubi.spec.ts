@@ -37,7 +37,7 @@ describe("Tubi TV", () => {
 		for (const file of fs.readdirSync(FIXTURE_DIRECTORY)) {
 			FIXTURES.set(
 				file.split(".")[0],
-				fs.readFileSync(`${FIXTURE_DIRECTORY}/${file}`, "utf8")
+				fs.readFileSync(`${FIXTURE_DIRECTORY}/${file}`, "utf8"),
 			);
 		}
 
@@ -52,6 +52,7 @@ describe("Tubi TV", () => {
 			let data;
 			try {
 				data = JSON.parse(fixtureText);
+				// biome-ignore lint/correctness/noUnusedVariables: biome migration
 			} catch (e) {
 				data = fixtureText;
 			}
@@ -99,18 +100,17 @@ describe("Tubi TV", () => {
 			apiGetMock.mockClear();
 		});
 
-		it.each(singleVideoLinks)(
-			"should resolve single video url: %s",
-			async (url: string, id: string) => {
-				const videos = await adapter.resolveURL(url);
-				expect(apiGetMock).toBeCalledTimes(1);
-				expect(videos).toHaveLength(1);
-				expect(videos[0]).toMatchObject({
-					service: adapter.serviceId,
-					id: id,
-				});
-			}
-		);
+		it.each(
+			singleVideoLinks,
+		)("should resolve single video url: %s", async (url: string, id: string) => {
+			const videos = await adapter.resolveURL(url);
+			expect(apiGetMock).toBeCalledTimes(1);
+			expect(videos).toHaveLength(1);
+			expect(videos[0]).toMatchObject({
+				service: adapter.serviceId,
+				id: id,
+			});
+		});
 
 		it.each(seriesLinks)("should resolve series url: %s", async (url: string) => {
 			const videos = await adapter.resolveURL(url);

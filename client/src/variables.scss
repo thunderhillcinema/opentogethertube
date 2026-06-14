@@ -1,3 +1,15 @@
+// THC fork: minimal breakpoint + layout partial.
+//
+// Upstream's visual overhaul (#2031) removed the original Vuetify-based
+// variables.scss along with Vuetify itself. Our embed-mode, projection-booth
+// and mobile-controls customizations still rely on these breakpoint values in
+// ~17 media queries across Room.vue, App.vue, VideoControls.vue,
+// BasicControls.vue and OmniPlayer.vue. Rather than inline literals everywhere,
+// we keep a slimmed-down partial that exposes ONLY the breakpoints and the
+// control-bar height. The Vuetify theme colour variables ($primary-color,
+// --v-theme-*, the :export toast values) are intentionally gone — anything
+// needing colour should use the new shadcn-vue CSS variables instead.
+
 $xs-max: 600px;
 $sm-min: $xs-max;
 $sm-max: 960px;
@@ -7,20 +19,4 @@ $lg-min: $md-max;
 $lg-max: 1920px;
 $xl-min: $lg-max;
 
-$background-color: rgb(var(--v-theme-background));
-$primary-color: rgb(var(--v-theme-primary));
-$secondary-color: rgb(var(--v-theme-secondary));
-$brand-color: $primary-color;
-
 $video-controls-height: 80px;
-
-:export {
-    // biome-ignore lint/correctness/noUnknownProperty: these are variable names, not CSS properties
-	toast-height: 48px;// $snackbar-wrapper-min-height;
-	// biome-ignore lint/correctness/noUnknownProperty: these are variable names, not CSS properties
-	toast-height-multiline: 68px; // vuetify.$snackbar-multi-line-wrapper-min-height;
-	// biome-ignore lint/correctness/noUnknownProperty: these are variable names, not CSS properties
-	toast-margin: 8px; // vuetify.$snackbar-wrapper-margin;
-	// biome-ignore lint/correctness/noUnknownProperty: these are variable names, not CSS properties
-	toast-padding: 0; // vuetify.$snackbar-wrapper-padding;
-}

@@ -42,9 +42,10 @@ export async function fetchSegments(videoId: string): Promise<Segment[]> {
 		if (cachedSegments) {
 			try {
 				return JSON.parse(cachedSegments);
+				// biome-ignore lint/correctness/noUnusedVariables: biome migration
 			} catch (e) {
 				log.warn(
-					`Failed to parse cached segments for video ${videoId}, fetching fresh segments`
+					`Failed to parse cached segments for video ${videoId}, fetching fresh segments`,
 				);
 			}
 		}
@@ -59,6 +60,6 @@ async function cacheSegments(videoId: string, segments: Segment[]) {
 	await redisClient.setEx(
 		`${SEGMENT_CACHE_PREFIX}:${videoId}`,
 		conf.get("video.sponsorblock.cache_ttl"),
-		JSON.stringify(segments)
+		JSON.stringify(segments),
 	);
 }
