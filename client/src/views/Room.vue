@@ -387,7 +387,7 @@ type QueueTab = (typeof QUEUE_TABS)[number];
 // THC fork: hoisted to module scope (biome lint/performance/useTopLevelRegex)
 const MOBILE_UA_REGEX = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
 
-// biome-ignore lint/nursery/noVueOptionsApi: TODO: convert to setup
+// biome-ignore lint/style/noVueOptionsApi: TODO: convert to setup
 export default defineComponent({
 	name: "room",
 	components: {
