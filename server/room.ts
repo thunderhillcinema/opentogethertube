@@ -739,20 +739,21 @@ export class Room implements RoomState {
 			this.currentSource = null; // sanity check
 		}
 
-		if (
-			(this.currentSource === null && this.queue.length > 0) ||
-			(this.currentSource &&
-				this.isPlaying &&
-				this.realPlaybackPosition >
-					(this.currentSource.endAt ?? this.currentSource.length ?? 0))
-		) {
-			if (
-				this.currentSource &&
-				this.isPlaying &&
-				this.realPlaybackPosition >
-					(this.currentSource.endAt ?? this.currentSource.length ?? 0)
-			) {
-				counterMediaWatched.labels({ service: this.currentSource.service }).inc();
+		// A live source has no meaningful end. `length` for a live HLS manifest is the duration of
+		// its sliding window, so the playback position overtakes it within seconds and the room
+		// would evict the stream almost immediately (dyc3/opentogethertube#246). Playback of a
+		// live source therefore ends only when something explicitly ends it: a skip, a queue
+		// change, or the player failing on a manifest that is no longer served.
+		const currentSource = this.currentSource;
+		const currentSourceEnded =
+			!!currentSource &&
+			this.isPlaying &&
+			!currentSource.isLive &&
+			this.realPlaybackPosition > (currentSource.endAt ?? currentSource.length ?? 0);
+
+		if ((currentSource === null && this.queue.length > 0) || currentSourceEnded) {
+			if (currentSource && currentSourceEnded) {
+				counterMediaWatched.labels({ service: currentSource.service }).inc();
 			}
 			await this.dequeueNext();
 		}

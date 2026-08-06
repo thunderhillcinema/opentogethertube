@@ -14,6 +14,13 @@ export interface VideoMetadata {
 	thumbnail: string;
 	mime: string;
 	highlight?: true;
+	/**
+	 * True when the source is a live stream with no fixed end, detected by the absence of an
+	 * `#EXT-X-ENDLIST` tag in its HLS manifest (RFC 8216 §4.3.3.4). Live sources must not be
+	 * auto-advanced when the playback position passes `length`, because `length` for a live
+	 * manifest is the sliding window's duration, not the length of the stream.
+	 */
+	isLive?: boolean;
 	hls_url?: string;
 	dash_url?: string;
 	src_url?: string;

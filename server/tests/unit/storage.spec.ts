@@ -295,6 +295,15 @@ describe("Storage: CachedVideos Spec", () => {
 		expect(attributes).not.toContain("description");
 	});
 
+	it("should not treat isLive as a fetchable info field", () => {
+		// Callers derive "what's missing from the cache" by filtering these fields for falsy
+		// values. `isLive: false` is a real answer, so including it here would mark every
+		// non-live video as permanently incomplete and defeat the cache for every service.
+		for (const service of [undefined, "youtube", "hls", "direct", "googledrive"]) {
+			expect(storage.getVideoInfoFields(service)).not.toContain("isLive");
+		}
+	});
+
 	it("should create or update multiple videos without failing", async () => {
 		const videos: Video[] = [
 			{

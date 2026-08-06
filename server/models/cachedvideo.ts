@@ -11,6 +11,7 @@ interface CachedVideoAttributes {
 	thumbnail?: string;
 	length?: number;
 	mime?: string;
+	isLive?: boolean;
 }
 
 export type CachedVideoCreationAttributes = Omit<CachedVideoAttributes, "id">;
@@ -29,6 +30,7 @@ export class CachedVideo
 	declare thumbnail?: string;
 	declare length?: number;
 	declare mime?: string;
+	declare isLive?: boolean;
 }
 
 export const createModel = (sequelize: Sequelize) => {
@@ -55,6 +57,7 @@ export const createModel = (sequelize: Sequelize) => {
 			thumbnail: DataTypes.STRING,
 			length: DataTypes.INTEGER,
 			mime: DataTypes.STRING,
+			isLive: DataTypes.BOOLEAN,
 		},
 		{
 			sequelize,
