@@ -5,9 +5,10 @@
  * be exercised here — it needs a real encoder, the ingest relay, and a browser.
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import URL from "node:url";
 import HlsVideoAdapter, { isManifestLive, M3u8ParseError } from "../../../services/hls.js";
+import { VideoNotFoundException } from "../../../exceptions.js";
 
 vi.mock("axios");
 
@@ -132,5 +133,111 @@ describe("HlsVideoAdapter live detection", () => {
 
 		expect(video.length).toBe(8);
 		expect(video.isLive).toBe(true);
+	});
+});
+
+describe("HlsVideoAdapter live probe", () => {
+	const PROBE_HOST = "cinema.example.com";
+	const LIVE_URL = `https://${PROBE_HOST}/livehls/live/my-stream/index.m3u8`;
+	let adapter: HlsVideoAdapter;
+	let mockAxiosGet;
+
+	beforeEach(() => {
+		adapter = new HlsVideoAdapter();
+		// Set directly rather than through initialize() so the test does not depend on config
+		// loading, which is what initialize() does with this value.
+		adapter.liveProbeHosts = [PROBE_HOST];
+		vi.resetAllMocks();
+		mockAxiosGet = axios.get;
+	});
+
+	describe("getLiveProbeSlug", () => {
+		it("extracts the slug from a playback URL on a probe host", () => {
+			expect(adapter.getLiveProbeSlug(URL.parse(LIVE_URL))).toBe("my-stream");
+		});
+
+		it("returns null for the same path on a host that is not configured", () => {
+			expect(
+				adapter.getLiveProbeSlug(
+					URL.parse("https://elsewhere.example.com/livehls/live/my-stream/index.m3u8"),
+				),
+			).toBeNull();
+		});
+
+		it("returns null for an unrelated path on a probe host", () => {
+			expect(
+				adapter.getLiveProbeSlug(URL.parse(`https://${PROBE_HOST}/media/movie.m3u8`)),
+			).toBeNull();
+		});
+	});
+
+	it("resolves a live stream through the probe without fetching the manifest", async () => {
+		mockAxiosGet.mockResolvedValue({
+			data: { live: true, status: "live", title: "Opening Night" },
+		});
+
+		const video = await adapter.fetchVideoInfo(LIVE_URL);
+
+		expect(mockAxiosGet).toHaveBeenCalledTimes(1);
+		expect(mockAxiosGet).toHaveBeenCalledWith(
+			`https://${PROBE_HOST}/api/stream/manifest_info/my-stream`,
+		);
+		expect(video).toMatchObject({
+			service: "hls",
+			id: LIVE_URL,
+			title: "Opening Night",
+			isLive: true,
+			hls_url: LIVE_URL,
+		});
+	});
+
+	it("does not set a length for a probed stream", async () => {
+		// The auto-advance check reads `endAt ?? length ?? 0`; inventing a length here would put
+		// a meaningless number into that comparison.
+		mockAxiosGet.mockResolvedValue({
+			data: { live: true, status: "live", title: "Opening Night" },
+		});
+
+		const video = await adapter.fetchVideoInfo(LIVE_URL);
+
+		expect(video.length).toBeUndefined();
+	});
+
+	it("reports a stream the probe says is not live", async () => {
+		mockAxiosGet.mockResolvedValue({
+			data: { live: false, status: "ended", title: "Last Night" },
+		});
+
+		const video = await adapter.fetchVideoInfo(LIVE_URL);
+
+		expect(video.isLive).toBe(false);
+	});
+
+	it("falls back to the URL when the probe returns an empty title", async () => {
+		mockAxiosGet.mockResolvedValue({ data: { live: true, status: "live", title: "" } });
+
+		const video = await adapter.fetchVideoInfo(LIVE_URL);
+
+		expect(video.title).toBe(LIVE_URL);
+	});
+
+	it("throws VideoNotFoundException when the probe 404s", async () => {
+		// The host returns 404 both for an unknown slug and for a stream the caller may not
+		// watch, deliberately, so this is the only thing it can mean here.
+		const err = new AxiosError("Not Found");
+		err.response = { status: 404 } as never;
+		mockAxiosGet.mockRejectedValue(err);
+		vi.mocked(axios.isAxiosError).mockReturnValue(true);
+
+		await expect(adapter.fetchVideoInfo(LIVE_URL)).rejects.toThrow(VideoNotFoundException);
+	});
+
+	it("still fetches the manifest for hosts that are not probe hosts", async () => {
+		mockAxiosGet.mockResolvedValue({ data: VOD_MEDIA_PLAYLIST });
+
+		const video = await adapter.fetchVideoInfo("https://other.example.com/vod/index.m3u8");
+
+		expect(mockAxiosGet).toHaveBeenCalledWith("https://other.example.com/vod/index.m3u8");
+		expect(video.isLive).toBe(false);
 	});
 });

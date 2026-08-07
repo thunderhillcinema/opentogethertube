@@ -7,3 +7,11 @@ session_secret="" # generate your own >= 80 characters
 
 [info_extractor.youtube]
 api_key="" # get your own key from https://console.developers.google.com/apis/credentials
+
+[info_extractor.hls]
+# Hosts whose HLS manifests are behind read-auth, and so cannot be fetched from this server.
+# A manifest URL on one of these hosts is resolved through the host's metadata probe
+# (GET /api/stream/manifest_info/<slug>) instead, which answers liveness and title without the
+# media. Manifest URLs are expected to look like /livehls/live/<slug>/index.m3u8.
+# Any host not listed keeps the default behaviour of fetching the manifest directly.
+live_probe_hosts=[]
