@@ -221,6 +221,13 @@ export type RoomStatePersistable = Omit<
 	| "votesToSkip"
 >;
 
+/**
+ * Minimum seconds between re-checks of a live source. Player errors arrive from every client at
+ * once, and a client can flap; the room only needs to ask the source often enough to notice a
+ * broadcast ending.
+ */
+const LIVE_RECHECK_INTERVAL = 10;
+
 export class Room implements RoomState {
 	_name = "";
 	_title = "";
@@ -253,6 +260,8 @@ export class Room implements RoomState {
 	log: winston.Logger;
 	_playbackStart: Dayjs | null = null;
 	_keepAlivePing: Dayjs;
+	/** When the current live source was last re-checked. Transient; never stored or synced. */
+	_lastLiveRecheck: Dayjs | null = null;
 	/**
 	 * Used to defer grabbing sponsorblock segments to keep video dequeueing from blocking.
 	 */
@@ -734,6 +743,52 @@ export class Room implements RoomState {
 		return counts;
 	}
 
+	/**
+	 * Advances off a live source that has stopped broadcasting.
+	 *
+	 * A live source cannot end by running out of duration — auto-advance is suppressed for it —
+	 * so without this the room would sit on a dead stream until somebody skipped it. When the
+	 * broadcast stops, the manifest stops being served and the players report an error.
+	 *
+	 * That error is only the trigger; re-resolving the source is the authority. A client that
+	 * errored for reasons of its own costs one cheap request and changes nothing, which is why a
+	 * single report is enough to ask.
+	 */
+	private async recheckLiveSource(): Promise<void> {
+		const currentSource = this.currentSource;
+		if (!currentSource?.isLive) {
+			return;
+		}
+		if (!this.realusers.some(user => user.playerStatus === PlayerStatus.error)) {
+			return;
+		}
+		if (
+			this._lastLiveRecheck &&
+			this._lastLiveRecheck.add(LIVE_RECHECK_INTERVAL, "second").isAfter(dayjs())
+		) {
+			return;
+		}
+		this._lastLiveRecheck = dayjs();
+
+		let stillLive: boolean;
+		try {
+			const video = await InfoExtract.getVideoInfo(currentSource.service, currentSource.id);
+			stillLive = !!video.isLive;
+		} catch {
+			// The source stopped resolving: it 404s once the broadcast ends. Either way it is not
+			// playable, and leaving the room on it helps nobody.
+			this.log.info(
+				`live source ${currentSource.service}:${currentSource.id} could not be resolved, treating it as ended`,
+			);
+			stillLive = false;
+		}
+
+		if (!stillLive) {
+			this.log.info("live source is no longer live, advancing");
+			await this.dequeueNext();
+		}
+	}
+
 	public async update(): Promise<void> {
 		if (this.currentSource === undefined) {
 			this.currentSource = null; // sanity check
@@ -757,6 +812,8 @@ export class Room implements RoomState {
 			}
 			await this.dequeueNext();
 		}
+
+		await this.recheckLiveSource();
 
 		if (
 			this.users.length > 0 &&
