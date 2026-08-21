@@ -133,6 +133,24 @@ export const RoomSettingsSchema = z
 	})
 	.strict();
 
+/**
+ * Playback control over HTTP, for an owner-authenticated caller that holds no websocket.
+ *
+ * `position` is an offset in seconds into the CURRENT item, not into a whole lineup. It is
+ * applied before the action, so `{ action: "play", position: n }` starts an item part-way
+ * through in a single request rather than racing a separate seek against a play.
+ */
+export const OttApiRequestRoomPlaybackSchema = z
+	.object({
+		action: z.enum(["play", "pause", "seek"]),
+		position: z.number().nonnegative().finite().optional(),
+	})
+	.strict()
+	.refine(body => body.action !== "seek" || body.position !== undefined, {
+		message: "position is required when action is 'seek'",
+		path: ["position"],
+	});
+
 export const ClaimSchema = z.object({
 	claim: z.boolean(),
 });
