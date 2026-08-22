@@ -166,6 +166,18 @@ export function roomToDb(room: RoomStatePersistable): Omit<RoomAttributes, "id">
 }
 
 /**
+ * Fields where a falsy value is a real answer rather than an absent one, so they must survive the
+ * filter below: `BehaviorOption.Never` is 0 and `enableVoteSkip` is a boolean, and a truthiness
+ * test silently discarded both, making them impossible to save.
+ *
+ * Deliberately not applied to every field. `Room.sync` builds its update with
+ * `_.pick(this, "title", "description", ...)` straight off the room, so those keys are always
+ * present -- an untitled room holds `""`. Letting empty strings through would mean any sync from
+ * such a room overwrites a stored title, which is a change well beyond fixing these two fields.
+ */
+const FALSY_VALID_FIELDS = new Set(["restoreQueueBehavior", "enableVoteSkip"]);
+
+/**
  * Converts a room into an object that can be stored in the database
  */
 export function roomToDbPartial(
@@ -181,7 +193,12 @@ export function roomToDbPartial(
 			restoreQueueBehavior: room.restoreQueueBehavior,
 			enableVoteSkip: room.enableVoteSkip,
 		},
-		v => !!v,
+		(value, key) =>
+			FALSY_VALID_FIELDS.has(key)
+				? // Supplied at all is the test. `null` is still refused: both of these columns are
+					// `allowNull: false`, so writing one through would turn a sync into a db error.
+					value !== undefined && value !== null
+				: !!value,
 	);
 	// room.prevQueue will become null if its length is 0, so we need to explicitly check for null here
 	if (room.prevQueue || room.prevQueue === null) {

@@ -41,6 +41,9 @@ export const OttApiRequestRoomCreateSchema = z
 		isTemporary: z.boolean().optional().default(true),
 		visibility: z.nativeEnum(Visibility).default(Visibility.Public).optional(),
 		queueMode: z.nativeEnum(QueueMode).optional(),
+		// Settable at creation so a room that should never prompt to restore a queue -- an
+		// unattended channel, say -- is created that way, rather than needing a follow-up patch.
+		restoreQueueBehavior: z.nativeEnum(BehaviorOption).optional(),
 	})
 	.merge(OttApiRequestRoomGenerateSchema);
 
