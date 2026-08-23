@@ -13,6 +13,8 @@ import {
 	type UndoRequest,
 	type AddRequest,
 	type UpdateQueueItemRequest,
+	type PlaybackRequest,
+	type SeekRequest,
 } from "ott-common/models/messages.js";
 import storage from "../storage.js";
 import { Grants } from "ott-common/permissions.js";
@@ -22,6 +24,8 @@ import type {
 	OttApiRequestRemoveFromQueue,
 	OttApiRequestUpdateQueueItem,
 	OttApiRequestRoomCreate,
+	OttApiRequestRoomPlayback,
+	OttApiResponseRoomPlayback,
 	OttApiRequestVote,
 	OttApiResponseGetRoom,
 	OttApiResponseRoomCreate,
@@ -36,6 +40,7 @@ import { counterHttpErrors } from "../metrics.js";
 import { conf } from "../ott-config.js";
 import {
 	OttApiRequestRoomCreateSchema,
+	OttApiRequestRoomPlaybackSchema,
 	OttApiRequestVoteSchema,
 	OttApiRequestAddToQueueSchema,
 	OttApiRequestRemoveFromQueueSchema,
@@ -174,6 +179,10 @@ const getRoom: RequestHandler<{ name: string }, OttApiResponseGetRoom, unknown> 
 		),
 		queue: room.queue.items,
 		currentSource: room.currentSource,
+		// Computed from the wall clock, so this is the live position rather than the last
+		// value that happened to be written down.
+		playbackPosition: room.realPlaybackPosition,
+		isPlaying: room.isPlaying,
 		hasOwner: !!room.owner,
 	};
 	res.json(resp);
@@ -501,6 +510,59 @@ const updateQueueItem: RequestHandler<
 	});
 };
 
+const roomPlayback: RequestHandler<
+	{ name: string },
+	OttResponseBody<OttApiResponseRoomPlayback>,
+	OttApiRequestRoomPlayback
+> = async (req, res) => {
+	const body = OttApiRequestRoomPlaybackSchema.parse(req.body);
+
+	if (!req.token) {
+		throw new OttException("Missing token");
+	}
+
+	const points = 5;
+	if (!(await consumeRateLimitPoints(res, req.ip, points))) {
+		return;
+	}
+
+	const result = await roommanager.getRoom(req.params.name);
+	if (!result.ok) {
+		throw result.value;
+	}
+	const room = result.value;
+
+	// A room that was just given a queue has no current item until the next update() tick, and
+	// that tick resets the position to the item's start. Pulling the item now means a position
+	// set by this request is not silently overwritten a moment later.
+	if (room.currentSource === null && room.queue.length > 0) {
+		await room.dequeueNext();
+	}
+
+	if (body.position !== undefined) {
+		const seekRequest: SeekRequest = {
+			type: RoomRequestType.SeekRequest,
+			value: body.position,
+		};
+		await room.processUnauthorizedRequest(seekRequest, { token: req.token });
+	}
+
+	if (body.action !== "seek") {
+		const playbackRequest: PlaybackRequest = {
+			type: RoomRequestType.PlaybackRequest,
+			state: body.action === "play",
+		};
+		await room.processUnauthorizedRequest(playbackRequest, { token: req.token });
+	}
+
+	// Returned so the caller can confirm the room took the change without a second request.
+	res.json({
+		success: true,
+		playbackPosition: room.realPlaybackPosition,
+		isPlaying: room.isPlaying,
+	});
+};
+
 const errorHandler: ErrorRequestHandler = (err: Error, req, res) => {
 	counterHttpErrors.labels({ error: err.name }).inc();
 	if (err instanceof OttException) {
@@ -639,6 +701,14 @@ router.post("/:name/vote", async (req, res, next) => {
 router.delete("/:name/vote", async (req, res, next) => {
 	try {
 		await removeVote(req, res, next);
+	} catch (e) {
+		errorHandler(e, req, res, next);
+	}
+});
+
+router.post("/:name/playback", async (req, res, next) => {
+	try {
+		await roomPlayback(req, res, next);
 	} catch (e) {
 		errorHandler(e, req, res, next);
 	}

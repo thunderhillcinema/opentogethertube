@@ -3,7 +3,7 @@ import _ from "lodash";
 import { CachedVideo, Room as DbRoom, User, loadModels } from "../../models/index.js";
 import storage from "../../storage.js";
 import permissions from "ott-common/permissions.js";
-import { Visibility, QueueMode } from "ott-common/models/types.js";
+import { Visibility, QueueMode, BehaviorOption } from "ott-common/models/types.js";
 import type { Video } from "ott-common/models/video.js";
 import { Room } from "../../room.js";
 import { roomToDb, roomToDbPartial } from "../../storage/room.js";
@@ -36,6 +36,100 @@ describe(
 			const dbroom = roomToDb(room);
 			const dbroomPartial = roomToDbPartial(room);
 			expect(dbroom).toMatchObject(dbroomPartial);
+		});
+
+		describe("roomToDbPartial falsy handling", () => {
+			it("keeps explicitly-provided falsy values for the fields that allow them", () => {
+				// The bug this guards: `restoreQueueBehavior: Never` is 0 and `enableVoteSkip:
+				// false` is false, and a truthiness filter dropped both, so neither could be saved.
+				const partial = roomToDbPartial({
+					restoreQueueBehavior: BehaviorOption.Never,
+					enableVoteSkip: false,
+				});
+				expect(partial).toHaveProperty("restoreQueueBehavior", BehaviorOption.Never);
+				expect(partial).toHaveProperty("enableVoteSkip", false);
+			});
+
+			it("still drops an empty title, which Room.sync sends on every untitled room", () => {
+				// Deliberately unchanged. `Room.sync` picks title/description straight off the
+				// room, so an untitled room always sends `""`; persisting that would let a sync
+				// overwrite a stored title.
+				const partial = roomToDbPartial({ title: "", description: "" });
+				expect(partial).not.toHaveProperty("title");
+				expect(partial).not.toHaveProperty("description");
+			});
+
+			it("omits fields that were never provided", () => {
+				// A partial update must not clobber columns it says nothing about.
+				const partial = roomToDbPartial({ title: "only the title" });
+				expect(partial).toHaveProperty("title", "only the title");
+				expect(partial).not.toHaveProperty("description");
+				expect(partial).not.toHaveProperty("visibility");
+				expect(partial).not.toHaveProperty("queueMode");
+				expect(partial).not.toHaveProperty("restoreQueueBehavior");
+				expect(partial).not.toHaveProperty("enableVoteSkip");
+				expect(partial).not.toHaveProperty("autoSkipSegmentCategories");
+			});
+
+			it("drops nulls, which three of these columns cannot store", () => {
+				// autoSkipSegmentCategories, restoreQueueBehavior and enableVoteSkip are all
+				// `allowNull: false`, so letting a null through would make a sync throw.
+				const partial = roomToDbPartial({
+					title: null as unknown as string,
+					restoreQueueBehavior: null as unknown as BehaviorOption,
+					enableVoteSkip: null as unknown as boolean,
+				});
+				expect(partial).not.toHaveProperty("title");
+				expect(partial).not.toHaveProperty("restoreQueueBehavior");
+				expect(partial).not.toHaveProperty("enableVoteSkip");
+			});
+
+			it("still lets prevQueue be nulled", () => {
+				expect(roomToDbPartial({ prevQueue: null })).toHaveProperty("prevQueue", null);
+			});
+		});
+
+		it("round-trips restoreQueueBehavior Never and enableVoteSkip false through the db", async () => {
+			await storage.saveRoom(new Room({ name: "example" }));
+			const saved = await storage.updateRoom({
+				name: "example",
+				restoreQueueBehavior: BehaviorOption.Never,
+				enableVoteSkip: false,
+			});
+			expect(saved).toBe(true);
+
+			const reloaded = await storage.getRoomByName("example");
+			expect(reloaded?.restoreQueueBehavior).toEqual(BehaviorOption.Never);
+			expect(reloaded?.enableVoteSkip).toEqual(false);
+		});
+
+		it("a room set to Never reloads with no queue to restore", async () => {
+			// The channel case: an off-block room unloads, and must come back clean rather than
+			// holding a queue that would prompt to be restored.
+			await storage.saveRoom(new Room({ name: "example" }));
+			await storage.updateRoom({
+				name: "example",
+				restoreQueueBehavior: BehaviorOption.Never,
+				prevQueue: [{ service: "direct", id: "leftover" }],
+			});
+
+			const opts = await storage.getRoomByName("example");
+			expect(opts?.restoreQueueBehavior).toEqual(BehaviorOption.Never);
+			const reloaded = new Room(opts!);
+			expect(reloaded.prevQueue).toBeNull();
+			expect(reloaded.queue.length).toEqual(0);
+		});
+
+		it("persists restoreQueueBehavior given at creation", async () => {
+			// The create path writes through roomToDb rather than the partial, but this is the
+			// value channel rooms are created with, so it is worth pinning.
+			expect(
+				await storage.saveRoom(
+					new Room({ name: "example", restoreQueueBehavior: BehaviorOption.Never }),
+				),
+			).toBe(true);
+			const reloaded = await storage.getRoomByName("example");
+			expect(reloaded?.restoreQueueBehavior).toEqual(BehaviorOption.Never);
 		});
 
 		it("should return room object without extra properties", async () => {
@@ -293,6 +387,15 @@ describe("Storage: CachedVideos Spec", () => {
 		expect(attributes).not.toContain("mime");
 		attributes = storage.getVideoInfoFields("googledrive");
 		expect(attributes).not.toContain("description");
+	});
+
+	it("should not treat isLive as a fetchable info field", () => {
+		// Callers derive "what's missing from the cache" by filtering these fields for falsy
+		// values. `isLive: false` is a real answer, so including it here would mark every
+		// non-live video as permanently incomplete and defeat the cache for every service.
+		for (const service of [undefined, "youtube", "hls", "direct", "googledrive"]) {
+			expect(storage.getVideoInfoFields(service)).not.toContain("isLive");
+		}
 	});
 
 	it("should create or update multiple videos without failing", async () => {

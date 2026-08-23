@@ -103,6 +103,11 @@ function filterVideoInfo(cachedVideo: CachedVideo): Video {
 	if (cachedVideo.mime) {
 		video.mime = cachedVideo.mime;
 	}
+	// Not gated on `isCachedInfoValid`: whether a source is live is a property of the source, and
+	// a stale `true` is corrected by the adapter on the next fetch.
+	if (cachedVideo.isLive !== null && cachedVideo.isLive !== undefined) {
+		video.isLive = cachedVideo.isLive;
+	}
 	return video;
 }
 /**
@@ -188,6 +193,7 @@ function toDbVideo(video: Video): CachedVideoCreationAttributes {
 		thumbnail: video.thumbnail,
 		length: video.length,
 		mime: video.mime,
+		isLive: video.isLive,
 	};
 }
 
@@ -201,6 +207,13 @@ export function getVideoInfoFields(service?: string): (keyof VideoMetadata)[] {
 			column === "serviceId" ||
 			column === "service"
 		) {
+			continue;
+		}
+		// `isLive` is a boolean whose `false` is a real answer, not a gap. Callers treat these
+		// fields as missing when falsy, so including it would mark every non-live video as
+		// incomplete forever, defeating the cache for every service and re-hitting provider APIs
+		// on every lookup.
+		if (column === "isLive") {
 			continue;
 		}
 		// eslint-disable-next-line array-bracket-newline

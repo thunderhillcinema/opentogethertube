@@ -13,6 +13,7 @@ import type {
 	OttApiRequestAccountRecoveryVerifySchema,
 	OttApiRequestAccountUpdateSchema,
 	OttApiRequestPatchRoomSchema,
+	OttApiRequestRoomPlaybackSchema,
 	ClaimSchema,
 	RoomSettingsSchema,
 	OttApiRequestRoomGenerateSchema,
@@ -65,6 +66,9 @@ export interface OttApiResponseGetRoom extends RoomSettings {
 	queueMode: QueueMode;
 	queue: QueueItem[];
 	currentSource: Video | null;
+	/** Live playback position within `currentSource`, in seconds. */
+	playbackPosition: number;
+	isPlaying: boolean;
 	hasOwner: boolean;
 	grants: Grants;
 	autoSkipSegmentCategories: Category[];
@@ -73,6 +77,13 @@ export interface OttApiResponseGetRoom extends RoomSettings {
 }
 
 export type OttApiRequestPatchRoom = z.infer<typeof OttApiRequestPatchRoomSchema>;
+
+export type OttApiRequestRoomPlayback = z.infer<typeof OttApiRequestRoomPlaybackSchema>;
+
+export interface OttApiResponseRoomPlayback {
+	playbackPosition: number;
+	isPlaying: boolean;
+}
 
 export interface OttApiRequestUndo {
 	event: ServerMessageEvent;

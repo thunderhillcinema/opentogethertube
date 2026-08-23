@@ -12,13 +12,20 @@ import {
 import dayjs from "dayjs";
 import tokens, { type SessionInfo } from "../../auth/tokens.js";
 import { RoomRequestType } from "ott-common/models/messages.js";
-import { type AuthToken, BehaviorOption, QueueMode, Role } from "ott-common/models/types.js";
+import {
+	type AuthToken,
+	BehaviorOption,
+	PlayerStatus,
+	QueueMode,
+	Role,
+} from "ott-common/models/types.js";
 import { Room, RoomUser } from "../../room.js";
 import infoextractor from "../../infoextractor.js";
 import type { Video, VideoId } from "ott-common/models/video.js";
 import permissions from "ott-common/permissions.js";
 import _ from "lodash";
 import { VideoQueue } from "../../videoqueue.js";
+import { VideoNotFoundException } from "../../exceptions.js";
 import { loadModels } from "../../models/index.js";
 import { buildClients } from "../../redisclient.js";
 
@@ -586,6 +593,163 @@ describe("Room", () => {
 		});
 
 		expect(await room.getRoleFromToken("fake")).toEqual(Role.RegisteredUser);
+	});
+
+	describe("live sources", () => {
+		let room: Room;
+
+		beforeEach(() => {
+			room = new Room({ name: "test" });
+			room.queue = new VideoQueue([{ service: "direct", id: "next" }]);
+			room.isPlaying = true;
+			// Well past the end of the source's reported length. For a live stream this is the
+			// normal state after watching for a minute, because `length` only describes the
+			// manifest's sliding window.
+			room._playbackStart = dayjs().subtract(60, "second");
+		});
+
+		it("should not auto-advance off a live source", async () => {
+			room.currentSource = {
+				service: "hls",
+				id: "live",
+				length: 8,
+				isLive: true,
+			};
+
+			await room.update();
+
+			expect(room.currentSource).toMatchObject({ id: "live" });
+			expect(room.queue).toHaveLength(1);
+		});
+
+		it("should auto-advance off a non-live source with the same length", async () => {
+			// Same numbers as above, isLive flipped: proves the suppression is what changed the
+			// outcome, not the timing.
+			room.currentSource = {
+				service: "hls",
+				id: "vod",
+				length: 8,
+				isLive: false,
+			};
+
+			await room.update();
+
+			expect(room.currentSource).toMatchObject({ id: "next" });
+			expect(room.queue).toHaveLength(0);
+		});
+
+		it("should auto-advance off a source with no isLive set", async () => {
+			// Every already-cached video predates the column and reports isLive as undefined.
+			room.currentSource = {
+				service: "direct",
+				id: "legacy",
+				length: 8,
+			};
+
+			await room.update();
+
+			expect(room.currentSource).toMatchObject({ id: "next" });
+		});
+
+		it("should still start playing a live source when nothing is playing", async () => {
+			// The other half of the condition must be untouched: an empty currentSource still
+			// pulls from the queue.
+			room.currentSource = null;
+			room.queue = new VideoQueue([{ service: "hls", id: "live", isLive: true }]);
+
+			await room.update();
+
+			expect(room.currentSource).toMatchObject({ id: "live" });
+		});
+	});
+
+	describe("live source re-check", () => {
+		let room: Room;
+
+		function addErroringUser(r: Room) {
+			const user = new RoomUser("user", "token");
+			user.playerStatus = PlayerStatus.error;
+			r.realusers.push(user);
+			return user;
+		}
+
+		beforeEach(() => {
+			room = new Room({ name: "test" });
+			room.currentSource = { service: "hls", id: "live", isLive: true };
+			room.queue = new VideoQueue([{ service: "direct", id: "next" }]);
+			room.isPlaying = true;
+		});
+
+		it("should advance when a live source is no longer live", async () => {
+			addErroringUser(room);
+			vi.spyOn(infoextractor, "getVideoInfo").mockResolvedValue({
+				service: "hls",
+				id: "live",
+				isLive: false,
+			});
+
+			await room.update();
+
+			expect(room.currentSource).toMatchObject({ id: "next" });
+		});
+
+		it("should advance when a live source no longer resolves at all", async () => {
+			// The probe 404s once the broadcast ends.
+			addErroringUser(room);
+			vi.spyOn(infoextractor, "getVideoInfo").mockRejectedValue(new VideoNotFoundException());
+
+			await room.update();
+
+			expect(room.currentSource).toMatchObject({ id: "next" });
+		});
+
+		it("should stay put when the source is still live", async () => {
+			// A client erroring for its own reasons must not evict a running broadcast.
+			addErroringUser(room);
+			vi.spyOn(infoextractor, "getVideoInfo").mockResolvedValue({
+				service: "hls",
+				id: "live",
+				isLive: true,
+			});
+
+			await room.update();
+
+			expect(room.currentSource).toMatchObject({ id: "live" });
+		});
+
+		it("should not re-check while no player reports an error", async () => {
+			const spy = vi.spyOn(infoextractor, "getVideoInfo");
+
+			await room.update();
+
+			expect(spy).not.toHaveBeenCalled();
+			expect(room.currentSource).toMatchObject({ id: "live" });
+		});
+
+		it("should not re-check a source that is not live", async () => {
+			room.currentSource = { service: "direct", id: "vod", length: 100 };
+			addErroringUser(room);
+			const spy = vi.spyOn(infoextractor, "getVideoInfo");
+
+			await room.update();
+
+			expect(spy).not.toHaveBeenCalled();
+		});
+
+		it("should rate limit re-checks", async () => {
+			addErroringUser(room);
+			const spy = vi.spyOn(infoextractor, "getVideoInfo").mockResolvedValue({
+				service: "hls",
+				id: "live",
+				isLive: true,
+			});
+
+			await room.update();
+			await room.update();
+			await room.update();
+
+			expect(spy).toHaveBeenCalledTimes(1);
+		});
 	});
 
 	describe("restore queue behavior", () => {

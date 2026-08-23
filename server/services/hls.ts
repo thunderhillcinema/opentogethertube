@@ -3,21 +3,45 @@ import axios from "axios";
 import { Parser as M3u8Parser, type PlaylistItem } from "m3u8-parser";
 import { OttException } from "ott-common/exceptions.js";
 import type { Video } from "ott-common/models/video.js";
-import { LocalFileException, UnsupportedMimeTypeException } from "../exceptions.js";
+import {
+	LocalFileException,
+	UnsupportedMimeTypeException,
+	VideoNotFoundException,
+} from "../exceptions.js";
 import { getLogger } from "../logger.js";
 import { getMimeType, isSupportedMimeType } from "../mime.js";
+import { conf } from "../ott-config.js";
 import { ServiceAdapter } from "../serviceadapter.js";
 
 const log = getLogger("hls");
 const HLS_URL_REGEX = /\/*\.(m3u8?)$/;
+/** Playback URLs on a probe host look like `/livehls/live/<slug>/index.m3u8`. */
+const LIVE_PROBE_PATH_REGEX = /^\/livehls\/live\/([^/]+)\/index\.m3u8$/;
+
+/** The shape returned by a probe host's `GET /api/stream/manifest_info/<slug>`. */
+interface ManifestInfo {
+	live: boolean;
+	status: string;
+	title: string;
+}
 
 export default class HlsVideoAdapter extends ServiceAdapter {
+	/**
+	 * Hosts that gate their manifests behind read-auth. Their manifests cannot be fetched from
+	 * here at all, so liveness and title come from a metadata probe instead.
+	 */
+	liveProbeHosts: string[] = [];
+
 	get serviceId(): "hls" {
 		return "hls";
 	}
 
 	get isCacheSafe(): boolean {
 		return false;
+	}
+
+	async initialize(): Promise<void> {
+		this.liveProbeHosts = conf.get("info_extractor.hls.live_probe_hosts");
 	}
 
 	isCollectionURL(link: string): boolean {
@@ -38,6 +62,12 @@ export default class HlsVideoAdapter extends ServiceAdapter {
 		if (url.protocol === "file:") {
 			throw new LocalFileException();
 		}
+
+		const slug = this.getLiveProbeSlug(url);
+		if (slug !== null) {
+			return await this.probeLiveStream(url, slug);
+		}
+
 		const fileName = (url.pathname ?? "").split("/").slice(-1)[0].trim();
 		const extension = fileName.split(".").slice(-1)[0];
 		const mime = getMimeType(extension) ?? "unknown";
@@ -45,6 +75,56 @@ export default class HlsVideoAdapter extends ServiceAdapter {
 			throw new UnsupportedMimeTypeException(mime);
 		}
 		return await this.handleM3u8(url);
+	}
+
+	/**
+	 * The stream slug, when this URL is a playback URL on a host that must be resolved by probe.
+	 * Null for every other URL, which keeps the normal manifest-fetching path.
+	 */
+	getLiveProbeSlug(url: URL.UrlWithStringQuery): string | null {
+		if (!url.host || !this.liveProbeHosts.includes(url.host)) {
+			return null;
+		}
+		return LIVE_PROBE_PATH_REGEX.exec(url.pathname ?? "")?.[1] ?? null;
+	}
+
+	/**
+	 * Resolves a livestream through the host's metadata probe.
+	 *
+	 * The manifest itself is unreachable from here: these hosts authorize every read with a
+	 * short-lived per-viewer token carried by a cookie a server cannot hold, so fetching it
+	 * returns 401 and the video could never be queued. The probe answers liveness and title
+	 * without the media, and grants no credential of its own.
+	 *
+	 * A 404 is the host's answer for both "no such stream" and "you may not watch this", so it is
+	 * reported as simply not found.
+	 */
+	async probeLiveStream(url: URL.UrlWithStringQuery, slug: string): Promise<Video> {
+		const probeUrl = `${url.protocol}//${url.host}/api/stream/manifest_info/${encodeURIComponent(slug)}`;
+
+		let info: ManifestInfo;
+		try {
+			const resp = await axios.get<ManifestInfo>(probeUrl);
+			info = resp.data;
+		} catch (e) {
+			if (axios.isAxiosError(e) && e.response?.status === 404) {
+				log.warn(`live probe: ${slug} is not available`);
+				throw new VideoNotFoundException();
+			}
+			throw e;
+		}
+
+		return {
+			service: "hls",
+			id: url.href,
+			title: info.title || url.href,
+			description: `Full Link: ${url.href}`,
+			mime: "application/x-mpegURL",
+			// A live stream has no length, and the probe deliberately does not invent one. Leaving
+			// it unset keeps it out of the auto-advance comparison entirely.
+			isLive: info.live,
+			hls_url: url.href,
+		};
 	}
 
 	async handleM3u8(url: URL.UrlWithStringQuery): Promise<Video> {
@@ -57,6 +137,10 @@ export default class HlsVideoAdapter extends ServiceAdapter {
 
 		let duration = 0;
 		let title: string | undefined;
+		// A master playlist carries no segments and no `#EXT-X-ENDLIST`, so liveness can only be
+		// read off the media playlist. Determining it from the master would report every VOD as
+		// live.
+		let isLive: boolean;
 
 		// The m3u8 manifest can be a master playlist containing other playlists or a media playlist containing segments.
 		// If it has playlists, we find the lowest bitrate one and extract the duration from it.
@@ -80,14 +164,18 @@ export default class HlsVideoAdapter extends ServiceAdapter {
 			parser2.end();
 			const manifest2 = parser2.manifest;
 			// log.silly(`Got m3u8 manifest with ${JSON.stringify(manifest2)}`);
+			isLive = isManifestLive(manifest2);
 			duration = manifest2.segments.reduce((acc, cur) => acc + cur.duration, 0);
-			title = manifest2.segments[0].title;
+			title = manifest2.segments[0]?.title;
 		} else {
+			isLive = isManifestLive(manifest);
 			duration = manifest.segments.reduce((acc, cur) => acc + cur.duration, 0);
-			title = manifest.segments[0].title;
+			title = manifest.segments[0]?.title;
 		}
 
-		if (duration === 0) {
+		// For a live stream `duration` is just the length of the current sliding window, so it
+		// carries no information about the stream and is not a reason to reject the playlist.
+		if (duration === 0 && !isLive) {
 			throw new M3u8ParseError("Duration of the selected playlist is 0");
 		}
 
@@ -98,9 +186,28 @@ export default class HlsVideoAdapter extends ServiceAdapter {
 			description: `Full Link: ${url.href}`,
 			mime: "application/x-mpegURL",
 			length: duration,
+			isLive,
 			hls_url: url.href,
 		};
 	}
+}
+
+/**
+ * Determines whether a parsed HLS *media* playlist describes a live stream.
+ *
+ * Per RFC 8216 §4.3.3.4, `#EXT-X-ENDLIST` indicates that no more segments will be added. A VOD
+ * playlist always carries it; a live playlist does not, and only gains one when the broadcast
+ * ends. Its absence is therefore the discriminator.
+ *
+ * Deliberately not inferred from duration: a live playlist reports the duration of its sliding
+ * window, which is a plausible-looking non-zero number that changes as the window slides, so
+ * duration-based detection misfires in both directions.
+ *
+ * Must be given a media playlist. A master playlist carries neither segments nor
+ * `#EXT-X-ENDLIST`, so it would always be reported as live.
+ */
+export function isManifestLive(manifest: { endList?: boolean }): boolean {
+	return !manifest.endList;
 }
 
 export class M3u8ParseError extends OttException {

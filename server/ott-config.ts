@@ -297,6 +297,17 @@ export const conf = convict({
 				env: "PEERTUBE_EMIT_AS_DIRECT",
 			},
 		},
+		hls: {
+			live_probe_hosts: {
+				default: [],
+				doc: "Hosts whose HLS manifests are behind read-auth, and so must be resolved through a metadata probe (GET /api/stream/manifest_info/<slug>) instead of by fetching the manifest. Manifest URLs on these hosts are expected to look like /livehls/live/<slug>/index.m3u8. Any host not listed here keeps the normal behaviour of fetching the manifest directly.",
+				format: Array,
+				env: "HLS_LIVE_PROBE_HOSTS",
+				children: {
+					format: String,
+				},
+			},
+		},
 		invidious: {
 			instances: {
 				default: ["yt.safh.de", "inv.nadeko.net", "yewtu.be"],
