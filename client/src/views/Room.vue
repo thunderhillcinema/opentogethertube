@@ -1488,17 +1488,27 @@ $in-video-chat-width-small: 250px;
 	@media (max-width: variables.$xs-max) {
 		// Use CSS Grid for proper space allocation
 		display: grid;
-		grid-template-rows: 1fr auto;
+		// THC fork: the video row is sized by the frame's aspect ratio, not by the
+		// leftover viewport height. A `1fr` row stretches to fill the (very tall)
+		// portrait viewport, and since the video is `object-fit: contain` it just
+		// letterboxes itself inside, leaving a big black gap below it. `auto` +
+		// `align-content: start` packs the video and controls together at the top.
+		grid-template-rows: auto auto;
+		align-content: start;
 		height: 100%; // Fill parent container
 
-		// Ensure video area maintains proper aspect ratio and fits available space
 		// Only apply grid positioning to video elements, not overlay elements like mouse-event-swallower
-		.player,
-		.omniplayer-container,
-		.playback-blocked-prompt {
+		> .player,
+		> .playback-blocked-prompt {
 			grid-row: 1;
-			min-height: 200px; // Reasonable minimum for video visibility
 			overflow: hidden;
+		}
+
+		// Collapse the video row onto the 16:9 frame itself.
+		> .player {
+			aspect-ratio: 16 / 9;
+			height: auto;
+			min-height: 0;
 		}
 
 		// Position video controls in separate grid row
@@ -1577,6 +1587,17 @@ $in-video-chat-width-small: 250px;
 				opacity: 1;
 			}
 		}
+	}
+}
+
+// THC fork: landscape phones auto-enter fullscreen, but they're wider than
+// $xs-max so they miss the mobile control-bar sizing above and fall back to the
+// desktop 90px min-height + 12px padding. On a short viewport that reads as dead
+// space under the buttons, so size the bar to its content instead.
+@media (orientation: landscape) and (max-height: 500px) {
+	.embed-container .video-controls {
+		min-height: 0;
+		padding: 4px 12px;
 	}
 }
 
