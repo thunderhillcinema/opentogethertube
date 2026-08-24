@@ -16,7 +16,11 @@
 		</div>
 
 		<!-- THC fork: EMBED MODE — minimal video player only -->
-		<div v-else-if="isEmbedMode && !showDisconnectedOverlay" class="embed-container">
+		<div
+			v-else-if="isEmbedMode && !showDisconnectedOverlay"
+			class="embed-container"
+			:class="{ immersive: isImmersiveLandscape }"
+		>
 			<div class="video-container" :class="{ 'projection-mode': isProjectionMode }">
 				<div class="video-subcontainer">
 					<div class="player-container" ref="playerContainer">
@@ -31,7 +35,7 @@
 						<div
 							id="mouse-event-swallower"
 							:class="{ hide: controlsVisible }"
-							@click="shouldShowControls ? togglePlayback() : null"
+							@click="onPlayerSurfaceClick"
 						></div>
 						<div class="playback-blocked-prompt" v-if="mediaPlaybackBlocked">
 							<Button size="xl" variant="default" @click="onClickUnblockPlayback">
@@ -45,6 +49,8 @@
 							:is-projectionist="isProjectionist"
 						/>
 					</div>
+					<!-- THC fork: touching the bar restarts the auto-hide timer, so the overlay
+					can't fade out from under a viewer who is mid-interaction. -->
 					<VideoControls
 						v-if="shouldShowControls"
 						:slider-position="sliderPosition"
@@ -54,6 +60,8 @@
 						:mode="controlsMode"
 						:is-projection-mode="isProjectionMode"
 						:is-projectionist="isProjectionist"
+						@pointerdown="revealVideoControls"
+						@pointermove="revealVideoControls"
 					/>
 				</div>
 			</div>
@@ -467,12 +475,23 @@ export default defineComponent({
 
 		// Reactive state for screen dimensions and fullscreen (for mobile controls detection)
 		const isMobilePortrait = ref(false);
+		const isMobileLandscape = ref(false);
 		const isInFullscreen = ref(false);
+		let orientationMQ: MediaQueryList | null = null;
 
 		// Check if mobile=check parameter is present (means parent wants us to verify mobile status)
 		const shouldCheckMobile = computed(() => {
 			return route.query.mobile === "check";
 		});
+
+		function hasTouchSupport() {
+			// msMaxTouchPoints is the legacy IE/Edge spelling, absent from the DOM typings.
+			const legacyTouchPoints =
+				(navigator as Navigator & { msMaxTouchPoints?: number }).msMaxTouchPoints ?? 0;
+			return (
+				"ontouchstart" in window || navigator.maxTouchPoints > 0 || legacyTouchPoints > 0
+			);
+		}
 
 		// More reliable mobile detection using user agent AND screen size
 		function isTrulyMobile() {
@@ -484,10 +503,7 @@ export default defineComponent({
 			const isMobileScreen = window.matchMedia("(max-width: 760px)").matches;
 
 			// Check for touch capability
-			const isTouchDevice =
-				"ontouchstart" in window ||
-				navigator.maxTouchPoints > 0 ||
-				(navigator as any).msMaxTouchPoints > 0;
+			const isTouchDevice = hasTouchSupport();
 
 			// If mobile=check parameter is present, require mobile user agent AND screen size AND touch capability
 			// This prevents desktop browsers with small windows from triggering mobile behavior
@@ -505,16 +521,33 @@ export default defineComponent({
 			return isMobileScreen;
 		}
 
-		function updateMobilePortraitState() {
+		/**
+		 * THC fork: a phone held sideways.
+		 *
+		 * `isTrulyMobile()` can't be reused here: it keys off `max-width: 760px`, and a phone
+		 * in landscape is usually *wider* than that (an iPhone 14 is 844px across). So we key
+		 * off viewport height instead — a short landscape viewport on a touch device is a
+		 * phone, while a tablet in landscape (768px+ tall) has room to spare and is excluded.
+		 */
+		function isPhoneLandscapeViewport() {
+			const isLandscape = window.matchMedia("(orientation: landscape)").matches;
+			const isShort = window.matchMedia("(max-height: 500px)").matches;
+
+			return isLandscape && isShort && hasTouchSupport();
+		}
+
+		function updateViewportState() {
 			const isMobile = isTrulyMobile();
 			const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 			isMobilePortrait.value = isMobile && isPortrait;
+			isMobileLandscape.value = isPhoneLandscapeViewport();
 
 			if (shouldCheckMobile.value) {
-				console.log("📱 Mobile portrait state updated:", {
+				console.log("📱 Viewport state updated:", {
 					isMobile,
 					isPortrait,
 					isMobilePortrait: isMobilePortrait.value,
+					isMobileLandscape: isMobileLandscape.value,
 				});
 			}
 		}
@@ -556,6 +589,15 @@ export default defineComponent({
 			return true;
 		});
 
+		/**
+		 * THC fork: immersive landscape — phone held sideways inside the embed iframe.
+		 *
+		 * The video gets the entire viewport and the control bar floats over the bottom of
+		 * it (auto-hiding while playback runs) instead of reserving a strip underneath, so
+		 * none of the picture is traded away for chrome.
+		 */
+		const isImmersiveLandscape = computed(() => isEmbedMode.value && isMobileLandscape.value);
+
 		// video control visibility
 		const controlsVisible = ref(true);
 		const videoControlsHideTimeout = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -596,8 +638,54 @@ export default defineComponent({
 			activateVideoControls();
 		});
 
-		const controlsMode = computed(() =>
-			currentSource.value?.service === "youtube" ? "outside-video" : "in-video",
+		const controlsMode = computed<"in-video" | "outside-video">(() => {
+			// THC fork: overlay the controls in immersive landscape regardless of service —
+			// a strip below the video would eat into the picture on a short viewport.
+			if (isImmersiveLandscape.value) {
+				return "in-video";
+			}
+			return currentSource.value?.service === "youtube" ? "outside-video" : "in-video";
+		});
+
+		/**
+		 * THC fork: what a tap on the video surface does.
+		 *
+		 * In immersive landscape the overlay controls fade out during playback, so a tap has
+		 * to bring them back — the way every mobile player behaves. Toggling playback there
+		 * would also let any audience member pause the room by fumbling the screen.
+		 */
+		function onPlayerSurfaceClick() {
+			if (isImmersiveLandscape.value) {
+				revealVideoControls();
+				return;
+			}
+			if (shouldShowControls.value) {
+				togglePlayback();
+			}
+		}
+
+		/**
+		 * THC fork: bring the overlay controls back, and fade them out again only if the
+		 * video is actually running — a paused video keeps its controls up.
+		 */
+		function revealVideoControls() {
+			if (store.state.room.isPlaying) {
+				activateVideoControls();
+			} else {
+				setVideoControlsVisibility(true);
+			}
+		}
+
+		// THC fork: touch devices fire no mouse movement, so nothing would otherwise start
+		// the hide timer in immersive landscape. Drive it off playback state instead.
+		watch(
+			[isImmersiveLandscape, () => store.state.room.isPlaying],
+			([immersive]) => {
+				if (immersive) {
+					revealVideoControls();
+				}
+			},
+			{ immediate: true },
 		);
 
 		// actively calculate the current position of the video
@@ -629,14 +717,14 @@ export default defineComponent({
 		onMounted(() => {
 			iTimestampUpdater.value = setInterval(timestampUpdate, 250);
 
-			// Initialize mobile portrait and fullscreen state
-			updateMobilePortraitState();
+			// Initialize viewport and fullscreen state
+			updateViewportState();
 			updateFullscreenState();
 
 			// Watch for orientation and resize changes
-			window.addEventListener("resize", updateMobilePortraitState);
-			const orientationMQ = window.matchMedia("(orientation: portrait)");
-			orientationMQ.addEventListener("change", updateMobilePortraitState);
+			window.addEventListener("resize", updateViewportState);
+			orientationMQ = window.matchMedia("(orientation: portrait)");
+			orientationMQ.addEventListener("change", updateViewportState);
 
 			// Watch for fullscreen changes
 			document.addEventListener("fullscreenchange", updateFullscreenState);
@@ -681,6 +769,9 @@ export default defineComponent({
 			if (iTimestampUpdater.value) {
 				clearInterval(iTimestampUpdater.value);
 			}
+			window.removeEventListener("resize", updateViewportState);
+			orientationMQ?.removeEventListener("change", updateViewportState);
+			document.removeEventListener("fullscreenchange", updateFullscreenState);
 		});
 
 		watch(truePosition, async newPosition => {
@@ -1111,10 +1202,13 @@ export default defineComponent({
 			isProjectionist,
 			isControlsOnlyMode,
 			shouldShowControls,
+			isImmersiveLandscape,
+			onPlayerSurfaceClick,
 
 			controlsVisible,
 			videoControlsHideTimeout,
 			controlsMode,
+			revealVideoControls,
 
 			truePosition,
 			sliderPosition,
@@ -1566,6 +1660,47 @@ $in-video-chat-width-small: 250px;
 	flex: 1;
 	position: relative;
 	overflow: hidden;
+}
+
+// THC fork: immersive landscape — a phone held sideways inside the embed iframe.
+// The video takes the entire viewport and the control bar floats over the bottom of it
+// (see `controlsMode`, which forces overlay mode to match), so no picture is traded for
+// chrome on a viewport that's already short. The class comes from JS rather than a media
+// query so the layout can't drift out of sync with that `controlsMode` switch.
+.embed-container.immersive {
+	padding-top: 0; // no top gutter to give away in landscape
+
+	.video-container,
+	.video-subcontainer {
+		height: 100%;
+		min-height: 0;
+	}
+
+	.player-container {
+		display: block; // undo the portrait video/controls grid on narrow phones
+		height: 100%;
+		min-height: 0;
+
+		// The portrait rules pin the video into a 16:9 box; sideways it should fill the
+		// viewport and letterbox itself.
+		> .player {
+			aspect-ratio: auto;
+			height: 100%;
+			max-height: none;
+		}
+	}
+
+	.video-controls {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		width: auto;
+		min-height: 0;
+		// Keep the bar clear of the notch and rounded corners while sideways.
+		padding: 4px calc(12px + env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
+			calc(12px + env(safe-area-inset-left));
+	}
 }
 
 // Additional mobile embed mode optimizations
