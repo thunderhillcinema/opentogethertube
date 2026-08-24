@@ -22,6 +22,7 @@
 					<div class="player-container" ref="playerContainer">
 						<OmniPlayer
 							:source="store.state.room.currentSource"
+							:show-add-hint="false"
 							@apiready="onPlayerApiReady"
 							@playing="onPlaybackChange(true)"
 							@paused="onPlaybackChange(false)"
@@ -117,6 +118,7 @@
 					>
 						<OmniPlayer
 							:source="store.state.room.currentSource"
+							:show-add-hint="!isProjectionMode || isProjectionist"
 							@apiready="onPlayerApiReady"
 							@playing="onPlaybackChange(true)"
 							@paused="onPlaybackChange(false)"

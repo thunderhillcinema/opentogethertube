@@ -246,6 +246,8 @@ export default {
 			"Play this video now, pushing the current video to the top of the queue.",
 		"no-video": "No video is playing.",
 		"no-video-text": 'Click "Add" below to add a video.',
+		// THC fork: shown in embed/projection-booth mode, where viewers have no queue to add to.
+		"no-video-text-audience": "Sit tight, the show will continue shortly.",
 	},
 	"add-preview": {
 		label: "Link or Search",
