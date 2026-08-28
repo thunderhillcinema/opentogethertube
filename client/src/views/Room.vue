@@ -21,7 +21,13 @@
 			class="embed-container"
 			:class="{ immersive: isImmersiveLandscape }"
 		>
-			<div class="video-container" :class="{ 'projection-mode': isProjectionMode }">
+			<div
+				class="video-container"
+				:class="{
+					'projection-mode': isProjectionMode,
+					'projection-audience': shieldPlayerSurface,
+				}"
+			>
 				<div class="video-subcontainer">
 					<div class="player-container" ref="playerContainer">
 						<OmniPlayer
@@ -1688,6 +1694,24 @@ $in-video-chat-width-small: 250px;
 	flex: 1;
 	position: relative;
 	overflow: hidden;
+}
+
+// THC fork: the audience never reaches the media element itself.
+//
+// #mouse-event-swallower is the primary shield, but it is a CLASS TOGGLE, and the
+// class it is toggled by (`controlsVisible`) is set BY hovering — so the shield's
+// state is decided by the very gesture it has to survive. Taking the hit target
+// away from the player outright does not depend on that timing, or on any future
+// control-visibility state, and it is what actually keeps the provider's own hover
+// chrome from ever being triggered: YouTube draws a large centred pause over the
+// frame on mouseover even with `controls: 0`, and an audience must not be handed a
+// pause for a broadcast they do not control.
+//
+// Hit-testing only. postMessage control of the YouTube IFrame API is unaffected, so
+// OTT keeps driving playback exactly as before. The shield above still takes clicks,
+// and AudiencePlayButton sits above that with its own pointer events.
+.video-container.projection-audience :is(iframe, video) {
+	pointer-events: none;
 }
 
 // THC fork: immersive landscape — a phone held sideways inside the embed iframe.
