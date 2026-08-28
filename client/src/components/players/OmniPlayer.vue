@@ -139,7 +139,9 @@
 			/>
 			<div v-else class="no-video rounded-md border">
 				<h1 class="text-6xl">{{ $t("video.no-video") }}</h1>
-				<span>{{ $t("video.no-video-text") }}</span>
+				<span>{{
+					showAddHint ? $t("video.no-video-text") : $t("video.no-video-text-audience")
+				}}</span>
 			</div>
 			<template #fallback>
 				<div class="no-video">
@@ -190,6 +192,14 @@ const props = defineProps({
 		validator: (source: QueueItem | null) => {
 			return !source || ALL_VIDEO_SERVICES.includes(source.service);
 		},
+	},
+	/**
+	 * THC fork: whether the "nothing playing" screen should tell the viewer to add a video.
+	 * False in embed/projection-booth mode, where there is no queue UI to add from.
+	 */
+	showAddHint: {
+		type: Boolean,
+		default: true,
 	},
 });
 
