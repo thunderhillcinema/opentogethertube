@@ -32,9 +32,12 @@
 							@paused="onPlaybackChange(false)"
 							@ready="onPlayerReady"
 						/>
+						<!-- THC fork: in projection mode the audience keeps this shield up at
+						all times (see shieldPlayerSurface) so the underlying player's own
+						hover chrome can never surface. -->
 						<div
 							id="mouse-event-swallower"
-							:class="{ hide: controlsVisible }"
+							:class="{ hide: controlsVisible && !shieldPlayerSurface }"
 							@click="onPlayerSurfaceClick"
 						></div>
 						<div class="playback-blocked-prompt" v-if="mediaPlaybackBlocked">
@@ -597,6 +600,30 @@ export default defineComponent({
 		 * none of the picture is traded away for chrome.
 		 */
 		const isImmersiveLandscape = computed(() => isEmbedMode.value && isMobileLandscape.value);
+
+		/**
+		 * THC fork: keep #mouse-event-swallower over the player at ALL times for a
+		 * projection-mode audience, instead of dropping it whenever our own controls
+		 * are showing.
+		 *
+		 * The shield is what stops pointer events reaching the embedded player. It
+		 * was hidden on `controlsVisible`, which is set BY hovering the video — so
+		 * the moment a viewer moved the mouse, the shield came down and the hover
+		 * landed on the player instead. Providers draw their own chrome on hover
+		 * (YouTube puts a large centred pause over the frame even with
+		 * `controls: 0`), so a pause button appeared over a broadcast that the
+		 * audience is not supposed to be able to pause.
+		 *
+		 * Audience only. The projectionist IS driving playback and must keep every
+		 * way of reaching the player they have today.
+		 *
+		 * Click behaviour is deliberately untouched: the shield already swallowed
+		 * taps everywhere except that hover window, so keeping it up only removes a
+		 * gap — it does not give a tap a new meaning.
+		 */
+		const shieldPlayerSurface = computed(
+			() => isProjectionMode.value && !isProjectionist.value,
+		);
 
 		// video control visibility
 		const controlsVisible = ref(true);
@@ -1206,6 +1233,7 @@ export default defineComponent({
 			onPlayerSurfaceClick,
 
 			controlsVisible,
+			shieldPlayerSurface,
 			videoControlsHideTimeout,
 			controlsMode,
 			revealVideoControls,
