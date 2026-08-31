@@ -85,7 +85,7 @@
 		>
 			<div class="mx-2.5 flex flex-row items-center gap-2" v-if="!store.state.fullscreen">
 				<h1
-					class="relative pl-4 font-display text-foreground text-2xl before:absolute before:bottom-[0.1em] before:left-0 before:top-[0.1em] before:w-1 before:bg-primary before:shadow-[0_0_12px_var(--primary)] before:content-['']"
+					class="relative pl-4 font-display text-foreground text-2xl before:absolute before:left-0 before:inset-y-[0.1em] before:w-1 before:bg-primary before:shadow-[0_0_12px_var(--primary)] before:content-['']"
 				>
 					{{
 						store.state.room.title !== ""
@@ -130,7 +130,7 @@
 					class="relative z-31 flex h-full flex-col group-data-[fullscreen=true]/room:max-h-screen group-data-[fullscreen=true]/room:w-full! group-data-[fullscreen=true]/room:p-0 group-data-[layout=default]/room:w-4/5 group-data-[layout=default]/room:justify-self-center group-data-[layout=default]/room:max-xl:w-full"
 				>
 					<div
-						class="h-full w-full group-data-[fullscreen=true]/room:h-screen"
+						class="size-full group-data-[fullscreen=true]/room:h-screen"
 						ref="playerContainer"
 					>
 						<OmniPlayer
@@ -144,7 +144,7 @@
 						<!-- THC fork: click swallower toggles playback when the viewer is allowed controls -->
 						<div
 							id="mouse-event-swallower"
-							class="absolute top-0 h-full w-full"
+							class="absolute top-0 size-full"
 							:class="{ hidden: controlsVisible }"
 							@click="shouldShowControls ? togglePlayback() : null"
 						></div>
