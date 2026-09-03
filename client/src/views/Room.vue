@@ -759,6 +759,27 @@ export default defineComponent({
 		const sliderPosition = ref(0);
 		const iTimestampUpdater: Ref<ReturnType<typeof setInterval> | null> = ref(null);
 
+		// THC fork: the last playhead position relayed to the embedding page.
+		// `timestampUpdate` runs at 250ms, which is far finer than anything a
+		// host needs for a seconds-granularity field, so the relay is throttled
+		// to once a second — 4x fewer postMessages for the same visible result.
+		const lastRelayedSecond = ref(-1);
+
+		function relayPlayhead(position: number) {
+			if (window.parent === window) {
+				return;
+			}
+			const whole = Math.floor(position);
+			if (whole === lastRelayedSecond.value) {
+				return;
+			}
+			lastRelayedSecond.value = whole;
+			// Origin "*" matches the projectionist-status and volume relays
+			// above; a playback position is not sensitive, and the embedding
+			// page is the one that put this iframe on screen.
+			window.parent.postMessage({ type: "ott-playhead", position: whole }, "*");
+		}
+
 		function timestampUpdate() {
 			if (!store.state.room.currentSource) {
 				truePosition.value = 0;
@@ -778,6 +799,7 @@ export default defineComponent({
 				0,
 				store.state.room.currentSource?.length ?? 0,
 			);
+			relayPlayhead(sliderPosition.value);
 		}
 
 		onMounted(() => {
