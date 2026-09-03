@@ -672,9 +672,28 @@ export default defineComponent({
 		});
 
 		const controlsMode = computed<"in-video" | "outside-video">(() => {
-			// THC fork: overlay the controls in immersive landscape regardless of service —
-			// a strip below the video would eat into the picture on a short viewport.
-			if (isImmersiveLandscape.value) {
+			// THC fork: the controls OVERLAY the picture everywhere we are embedded.
+			//
+			// This started as an immersive-landscape-only rule ("a strip below the
+			// video would eat into the picture on a short viewport"), but that
+			// argument is not about landscape — it is about being an embed. An
+			// embed is a fixed-aspect window punched into someone else's page, and
+			// the host has to commit to a height before it knows what will play. A
+			// strip below the picture is therefore paid for out of the host's box,
+			// and the host cannot know when to budget for it: `outside-video` is
+			// YouTube-only and its height is breakpoint-dependent (90px, or 80px
+			// at/below $xs-max), while every other service — Vimeo, PeerTube,
+			// direct video — needs nothing. One embed box cannot be right for both.
+			//
+			// Overlaying instead makes the requirement exactly 16:9 for every
+			// service at every size, which is a height a host CAN commit to. The
+			// consumer side of this is `.ott-embed-box` in thunderhillcinema's
+			// app.css — it carried a `--ott-controls-h` fudge factor precisely
+			// because of this split, and that knob goes away with this change.
+			//
+			// Normal (non-embed) mode is untouched: there the page owns its own
+			// scroll and a strip below the picture costs nothing.
+			if (isEmbedMode.value) {
 				return "in-video";
 			}
 			return currentSource.value?.service === "youtube" ? "outside-video" : "in-video";
@@ -689,6 +708,20 @@ export default defineComponent({
 		 */
 		function onPlayerSurfaceClick() {
 			if (isImmersiveLandscape.value) {
+				revealVideoControls();
+				return;
+			}
+			// THC fork: overlay controls auto-hide (activateVideoControls arms the
+			// timer for every mode except `outside-video`), and a touch device
+			// fires no mouse movement to bring them back — so a tap on a hidden
+			// bar has to reveal it before a tap can mean "toggle playback".
+			// Otherwise the only affordance for reaching the controls is a mouse
+			// the device may not have. Additive: this only intercepts taps that
+			// would previously have toggled playback with the bar hidden.
+			//
+			// Immersive landscape above stays stricter — a tap NEVER toggles
+			// there, so a fumbled screen cannot pause the room for everyone.
+			if (controlsMode.value === "in-video" && !controlsVisible.value) {
 				revealVideoControls();
 				return;
 			}
@@ -1715,10 +1748,12 @@ $in-video-chat-width-small: 250px;
 }
 
 // THC fork: immersive landscape — a phone held sideways inside the embed iframe.
-// The video takes the entire viewport and the control bar floats over the bottom of it
-// (see `controlsMode`, which forces overlay mode to match), so no picture is traded for
-// chrome on a viewport that's already short. The class comes from JS rather than a media
-// query so the layout can't drift out of sync with that `controlsMode` switch.
+// The video takes the entire viewport, dropping the top gutter the portrait embed
+// keeps. The control bar floats over the bottom of it in EVERY embed now (see
+// `controlsMode`, which returns "in-video" for the whole of embed mode), so what is
+// specific to immersive is the gutter and the full-bleed height, not the overlay.
+// The class comes from JS rather than a media query so the layout can't drift out of
+// sync with the `isImmersiveLandscape` computed that also drives tap behaviour.
 .embed-container.immersive {
 	padding-top: 0; // no top gutter to give away in landscape
 
