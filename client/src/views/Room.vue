@@ -1585,7 +1585,13 @@ $in-video-chat-width-small: 250px;
 		// Ensure proper touch scrolling is disabled
 		touch-action: none;
 		-webkit-overflow-scrolling: touch;
-		padding-top: 24px;
+		// THC fork: the 24px top gutter that used to live here is GONE.
+		// It was added as "restore 24px top padding on mobile to prevent video
+		// cutoff" (2ea9e935) — a partial mitigation for the site header
+		// painting over the top of the picture. It never could have worked:
+		// the header is 64px. The header is now hidden for the whole of embed
+		// mode (App.vue), so the gutter has nothing left to clear, and keeping
+		// it would spend 24px of a box that is budgeted at exactly 16:9.
 	}
 }
 
@@ -1748,15 +1754,15 @@ $in-video-chat-width-small: 250px;
 }
 
 // THC fork: immersive landscape — a phone held sideways inside the embed iframe.
-// The video takes the entire viewport, dropping the top gutter the portrait embed
-// keeps. The control bar floats over the bottom of it in EVERY embed now (see
-// `controlsMode`, which returns "in-video" for the whole of embed mode), so what is
-// specific to immersive is the gutter and the full-bleed height, not the overlay.
+// The video fills the viewport and letterboxes itself instead of being pinned into
+// the portrait 16:9 box.
+//
+// The control bar floats over the bottom of it in EVERY embed now (see
+// `controlsMode`, which returns "in-video" for the whole of embed mode), so the
+// overlay is no longer what distinguishes immersive — the full-bleed player is.
 // The class comes from JS rather than a media query so the layout can't drift out of
 // sync with the `isImmersiveLandscape` computed that also drives tap behaviour.
 .embed-container.immersive {
-	padding-top: 0; // no top gutter to give away in landscape
-
 	.video-container,
 	.video-subcontainer {
 		height: 100%;

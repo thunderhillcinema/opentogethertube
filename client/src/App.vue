@@ -2,9 +2,22 @@
 	<TooltipProvider :delay-duration="200">
 		<div id="app" class="relative flex min-h-screen flex-col bg-background text-foreground">
 			<!-- MARQUEE HEADER -->
-			<!-- THC fork: hidden entirely in projection-booth mode -->
+			<!-- THC fork: hidden in projection-booth mode AND in embed mode.
+			     `position: fixed` puts .embed-container at the top of the iframe,
+			     and this header is `sticky top-0 z-40` with an h-16 row — so in an
+			     embed it paints over the first ~64px of the picture, which the
+			     host's fixed-aspect box has no height to give away. Room.vue's
+			     FOOTER already guarded on isEmbedMode for the same reason; this
+			     guard was the asymmetry, and it is why an embedded film read as
+			     "cut off at the top" on every screen size.
+			     Note this makes the embed-mode branches on the header's own
+			     controls below (redirect-to-full-site instead of opening the
+			     drawer, etc.) unreachable. They are left in place rather than
+			     torn out: they are the correct behaviour if this guard is ever
+			     relaxed, and removing them would make relaxing it silently
+			     wrong. -->
 			<header
-				v-show="!fullscreen && !isProjectionMode"
+				v-show="!fullscreen && !isProjectionMode && !isEmbedMode"
 				class="sticky top-0 z-40 border-b bg-background/85 backdrop-blur-md"
 			>
 				<div class="flex h-16 items-center gap-3 px-4 md:px-6">
