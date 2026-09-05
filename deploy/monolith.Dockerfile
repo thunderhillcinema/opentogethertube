@@ -48,6 +48,21 @@ COPY docker/scripts/wait_for_db.sh /app/wait_for_db.sh
 COPY --from=production-stage /app /app
 HEALTHCHECK --interval=30s --timeout=3s CMD ( curl -f http://localhost:8080/api/status || exit 1 )
 
+# THC fork: stamp the source commit ONTO THE IMAGE so the box can answer "which
+# commit is this container running?" without trusting the checkout beside it.
+# `thc-ctl update` reads this label off the image the container is using and
+# skips the rebuild only when it equals the checkout's HEAD; an absent label
+# means UNKNOWN, so it rebuilds.
+#
+# Build args are per-stage and must be re-declared -- the existing ARG/ENV at
+# build-stage does not reach here, which is why the image carried no provenance
+# despite compose already passing GIT_COMMIT.
+#
+# Deliberately the LAST layer: its value changes on every commit, so anything
+# placed after it would be rebuilt every time.
+ARG GIT_COMMIT
+LABEL com.thunderhillcinema.git-commit=$GIT_COMMIT
+
 CMD ["/bin/sh", "wait_for_db.sh", "--", "yarn", "run", "start"]
 
 FROM node:22-alpine3.22 AS deploy-stage
