@@ -92,8 +92,13 @@ describe("Vimeo", () => {
 					},
 				},
 			});
-			adapter.api.get = oembedGet;
-			adapter.authedApi.get = authedGet;
+			// `ReturnType<typeof vi.fn>` is `Mock<any[], unknown>`, and `unknown`
+			// does not satisfy axios's `Promise<R>` return, so a bare assignment
+			// fails TS2322. That error broke `yarn workspace ott-server run build`
+			// — which type-checks `tests/**` — and so broke the Docker image build
+			// and every deploy with it.
+			adapter.api.get = oembedGet as unknown as typeof adapter.api.get;
+			adapter.authedApi.get = authedGet as unknown as typeof adapter.authedApi.get;
 		});
 
 		it("uses the unauthenticated oembed endpoint when no credentials are provided", async () => {
