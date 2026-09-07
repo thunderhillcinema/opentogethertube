@@ -56,6 +56,7 @@
 						<AudiencePlayButton
 							:is-projection-mode="isProjectionMode"
 							:is-projectionist="isProjectionist"
+							:playback-stalled="playbackStalled"
 						/>
 					</div>
 					<!-- THC fork: touching the bar restarts the auto-hide timer, so the overlay
@@ -167,6 +168,7 @@
 						<AudiencePlayButton
 							:is-projection-mode="isProjectionMode"
 							:is-projectionist="isProjectionist"
+							:playback-stalled="playbackStalled"
 						/>
 					</div>
 					<VideoControls
@@ -388,6 +390,7 @@ import { useScreenOrientation, useMouseInElement } from "@vueuse/core";
 import { KeyboardShortcuts, RoomKeyboardShortcutsKey } from "@/util/keyboard-shortcuts";
 import VideoControls from "@/components/controls/VideoControls.vue";
 import AudiencePlayButton from "@/components/AudiencePlayButton.vue";
+import { usePlaybackStall } from "@/util/playback-stall";
 import RestoreQueue from "@/components/RestoreQueue.vue";
 import VoteSkip from "@/components/VoteSkip.vue";
 import { waitForToken } from "@/util/token";
@@ -1085,8 +1088,17 @@ export default defineComponent({
 			console.debug("internal player API is now ready");
 		}
 
+		/**
+		 * THC fork: what THIS browser's player is actually doing, as distinct
+		 * from what the room says. Fed by the player's own `playing` / `paused`
+		 * events, which is the only place the difference is visible — see
+		 * `usePlaybackStall`.
+		 */
+		const localPlaying = ref(false);
+
 		async function onPlaybackChange(changeTo: boolean) {
 			console.debug(`onPlaybackChange: ${changeTo}`);
+			localPlaying.value = changeTo;
 			if (!changeTo) {
 				setVideoControlsVisibility(true);
 			} else {
@@ -1098,6 +1110,25 @@ export default defineComponent({
 
 			await applyIsPlaying(store.state.room.isPlaying);
 		}
+
+		/**
+		 * THC fork: the room is playing but this viewer's picture never started.
+		 *
+		 * Scoped to the shielded audience — `shieldPlayerSurface` names exactly
+		 * the viewers who cannot reach the player themselves, so the two answer
+		 * the same question and cannot drift. The projectionist keeps every
+		 * control they have and needs no overlay.
+		 */
+		const { stalled: playbackStalled } = usePlaybackStall({
+			roomPlaying: computed(() => store.state.room.isPlaying),
+			localPlaying,
+			enabled: shieldPlayerSurface,
+			// Read from the store rather than the `currentSource` computed below
+			// — that one is declared later in this setup and would be in its
+			// temporal dead zone here.
+			sourceKey: computed(() => store.state.room.currentSource?.id),
+		});
+
 		function onPlayerReady() {
 			if (currentSource.value?.service === "vimeo") {
 				onPlayerReadyVimeo();
@@ -1330,6 +1361,7 @@ export default defineComponent({
 
 			mediaPlaybackBlocked,
 			onClickUnblockPlayback,
+			playbackStalled,
 			secondsToTimestamp,
 
 			roomVisibilityIcon,

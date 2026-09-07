@@ -29,10 +29,17 @@ const props = withDefaults(
 	defineProps<{
 		isProjectionMode: boolean;
 		isProjectionist: boolean;
+		/**
+		 * THC fork: this viewer's own player is not running while the room says
+		 * it should be. Measured by the parent from the player's own events —
+		 * see `playbackStalled` in Room.vue.
+		 */
+		playbackStalled: boolean;
 	}>(),
 	{
 		isProjectionMode: false,
 		isProjectionist: false,
+		playbackStalled: false,
 	},
 );
 
@@ -78,13 +85,36 @@ onUnmounted(() => {
 	}
 });
 
-// Show button only for audience members in projection mode when video is not playing AND not in cooldown
+/**
+ * Two independent reasons an audience member needs this button, and they are
+ * different questions:
+ *
+ *   * the ROOM is stopped — nothing is being broadcast to start;
+ *   * the room is playing but THIS viewer's player never started — a blocked
+ *     autoplay.
+ *
+ * It used to ask only the first, which is the reading that is `true` exactly
+ * when the second case is false. A projection room is playing server-side
+ * whether or not any given browser managed to start it, so a stalled viewer
+ * got a blank picture, a correct advancing clock, and no control.
+ *
+ * On YouTube nothing else catches it: `YoutubePlayer.play()` fires
+ * `playVideo()` and resolves unconditionally, so the blocked autoplay never
+ * rejects and Room.vue's `mediaPlaybackBlocked` prompt never renders either —
+ * that path only sees a real `NotAllowedError`, which only a media element
+ * throws. The fork also holds `#mouse-event-swallower` over the player for the
+ * whole of an audience member's session (`shieldPlayerSurface`), so the manual
+ * tap YouTube's own player requires cannot reach the frame. This button is the
+ * only way out.
+ *
+ * The cooldown deliberately does NOT gate the stall. It answers "the
+ * projectionist just stopped the video, don't nag" — a claim about a STOPPED
+ * room, which a stall is not; a stall is a fact about a room that is running.
+ */
 const shouldShowButton = computed(() => {
+	const roomStopped = !store.state.room.isPlaying && !isInCooldown.value;
 	const result =
-		props.isProjectionMode &&
-		!props.isProjectionist &&
-		!store.state.room.isPlaying &&
-		!isInCooldown.value;
+		props.isProjectionMode && !props.isProjectionist && (roomStopped || props.playbackStalled);
 
 	if (props.isProjectionMode) {
 		console.log(
@@ -97,6 +127,8 @@ const shouldShowButton = computed(() => {
 			store.state.room.isPlaying,
 			"isInCooldown=",
 			isInCooldown.value,
+			"playbackStalled=",
+			props.playbackStalled,
 			"shouldShow=",
 			result,
 		);
