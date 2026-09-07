@@ -6,7 +6,12 @@ services:
       dockerfile: deploy/monolith.Dockerfile
       target: docker-stage
       args:
-        - GIT_COMMIT=${GIT_COMMIT:-$(git rev-parse HEAD)}
+        # Compose INTERPOLATES variables; it does not run command substitution.
+        # The upstream default `${GIT_COMMIT:-$(git rev-parse HEAD)}` therefore
+        # resolves to that text VERBATIM whenever GIT_COMMIT is unset, stamping the
+        # image's provenance label with a string that can never match any commit.
+        # Empty is honest: the reader treats a non-hex label as UNKNOWN and rebuilds.
+        - GIT_COMMIT=${GIT_COMMIT:-}
     container_name: opentogethertube
     environment:
       - PORT=8080
