@@ -43,6 +43,13 @@ const props = withDefaults(
 	},
 );
 
+/**
+ * A stall is answered by the PARENT, which owns the player. Room.vue's
+ * `onClickUnblockPlayback` is that answer and already exists — it is what the
+ * upstream `mediaPlaybackBlocked` prompt calls.
+ */
+const emit = defineEmits<{ unblock: [] }>();
+
 const store = useStore();
 const roomapi = useRoomApi(useConnection());
 
@@ -137,8 +144,35 @@ const shouldShowButton = computed(() => {
 	return result;
 });
 
+/**
+ * The two reasons this button appears take two different remedies, and the
+ * mutually-exclusive one is why: a stall is defined by the room ALREADY
+ * playing, so it can never coincide with a stopped room.
+ *
+ * A stopped room is started by asking the room. The server flips `isPlaying`,
+ * marks it dirty, and the sync that comes back drives every viewer's player
+ * through `applyIsPlaying`.
+ *
+ * A stall cannot be. `Room.play()` returns early on `if (this.isPlaying)`
+ * without marking anything dirty, so nothing goes out on the wire, nothing
+ * calls `applyIsPlaying`, and the one player that needed starting is never
+ * told to. The tap granted exactly the user activation the autoplay policy was
+ * waiting for and then nothing spent it — black picture, advancing clock,
+ * overlay still up. A remedy that cannot move its own finding is a loop.
+ *
+ * So the stall is answered locally, inside the gesture, by the parent that
+ * holds the player. The room is deliberately NOT asked as well: it would
+ * change nothing, and `publishRoomEvent` would announce "played the video" to
+ * every other viewer on behalf of someone who altered nothing.
+ */
 function handlePlayClick() {
 	console.log("[AudiencePlayButton] Play button clicked by audience member");
+
+	if (props.playbackStalled) {
+		emit("unblock");
+		return;
+	}
+
 	roomapi.play();
 }
 </script>

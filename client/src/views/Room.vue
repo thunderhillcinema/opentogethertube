@@ -57,6 +57,7 @@
 							:is-projection-mode="isProjectionMode"
 							:is-projectionist="isProjectionist"
 							:playback-stalled="playbackStalled"
+							@unblock="onClickUnblockPlayback"
 						/>
 					</div>
 					<!-- THC fork: touching the bar restarts the auto-hide timer, so the overlay
@@ -169,6 +170,7 @@
 							:is-projection-mode="isProjectionMode"
 							:is-projectionist="isProjectionist"
 							:playback-stalled="playbackStalled"
+							@unblock="onClickUnblockPlayback"
 						/>
 					</div>
 					<VideoControls
