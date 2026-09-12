@@ -46,6 +46,7 @@
 				v-if="!!source && source.service === 'youtube'"
 				ref="player"
 				:video-id="source.id"
+				:start-muted="startMuted"
 				class="player"
 				@apiready="onApiReady"
 				@playing="onPlaying"
@@ -200,6 +201,15 @@ const props = defineProps({
 	showAddHint: {
 		type: Boolean,
 		default: true,
+	},
+	/**
+	 * THC fork: start the YouTube player muted so a shielded projection audience
+	 * gets muted autoplay (the only start the browser allows without a gesture
+	 * on the nested iframe). Forwarded to YoutubePlayer; other players ignore it.
+	 */
+	startMuted: {
+		type: Boolean,
+		default: false,
 	},
 });
 

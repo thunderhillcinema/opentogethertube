@@ -33,6 +33,7 @@
 						<OmniPlayer
 							:source="store.state.room.currentSource"
 							:show-add-hint="false"
+							:start-muted="shieldPlayerSurface"
 							@apiready="onPlayerApiReady"
 							@playing="onPlaybackChange(true)"
 							@paused="onPlaybackChange(false)"
@@ -57,7 +58,9 @@
 							:is-projection-mode="isProjectionMode"
 							:is-projectionist="isProjectionist"
 							:playback-stalled="playbackStalled"
+							:needs-unmute="needsUnmute"
 							@unblock="onClickUnblockPlayback"
+							@unmute="onClickUnmute"
 						/>
 					</div>
 					<!-- THC fork: touching the bar restarts the auto-hide timer, so the overlay
@@ -138,6 +141,7 @@
 						<OmniPlayer
 							:source="store.state.room.currentSource"
 							:show-add-hint="!isProjectionMode || isProjectionist"
+							:start-muted="shieldPlayerSurface"
 							@apiready="onPlayerApiReady"
 							@playing="onPlaybackChange(true)"
 							@paused="onPlaybackChange(false)"
@@ -170,7 +174,9 @@
 							:is-projection-mode="isProjectionMode"
 							:is-projectionist="isProjectionist"
 							:playback-stalled="playbackStalled"
+							:needs-unmute="needsUnmute"
 							@unblock="onClickUnblockPlayback"
+							@unmute="onClickUnmute"
 						/>
 					</div>
 					<VideoControls
@@ -1131,6 +1137,33 @@ export default defineComponent({
 			sourceKey: computed(() => store.state.room.currentSource?.id),
 		});
 
+		/**
+		 * THC fork: a shielded audience's player starts MUTED (see
+		 * `:start-muted="shieldPlayerSurface"` on OmniPlayer) so the browser lets
+		 * it autoplay at all — a gesture on our overlay never reaches the nested
+		 * YouTube iframe, so with-sound autoplay is impossible and muted autoplay
+		 * is the only start there is. `audienceMuted` tracks whether this viewer
+		 * has lifted that yet; it stays muted across film cuts once set false (the
+		 * player keeps its unmuted state), so sound is a one-time tap per session.
+		 */
+		const audienceMuted = ref(true);
+
+		// Playing, but still muted: sound is the one thing missing. Gated on the
+		// same shield as the stall so a projectionist (who drives the player) and
+		// a normal room never see the prompt.
+		const needsUnmute = computed(
+			() => shieldPlayerSurface.value && localPlaying.value && audienceMuted.value,
+		);
+
+		// Answered locally, inside the tap: the room is already playing, so asking
+		// it changes nothing. `unMute` lifts YouTube's mute (distinct from volume,
+		// which `setVolume` already restored on api-ready), and the overlay clears
+		// because `needsUnmute` goes false.
+		function onClickUnmute(): void {
+			player.unMute();
+			audienceMuted.value = false;
+		}
+
 		function onPlayerReady() {
 			if (currentSource.value?.service === "vimeo") {
 				onPlayerReadyVimeo();
@@ -1364,6 +1397,8 @@ export default defineComponent({
 			mediaPlaybackBlocked,
 			onClickUnblockPlayback,
 			playbackStalled,
+			needsUnmute,
+			onClickUnmute,
 			secondsToTimestamp,
 
 			roomVisibilityIcon,

@@ -156,6 +156,82 @@ describe("AudiencePlayButton component", () => {
 		});
 		expect(wrapper.emitted("unblock")).toBeUndefined();
 	});
+
+	/**
+	 * THC fork: the third reason the button appears, and the one the live page
+	 * relies on. A shielded audience cannot autoplay a nested YouTube iframe with
+	 * sound — a gesture on our overlay never reaches that frame — so the player
+	 * starts MUTED, which the browser's muted-autoplay policy allows. The picture
+	 * rolls on its own; `playbackStalled` therefore stays false (this viewer IS
+	 * playing). The only thing missing is sound, and the shield blocks the
+	 * player's own unmute control, so this button carries it.
+	 */
+	it("offers sound when the audience's player is playing but muted", async () => {
+		const { wrapper, store } = mountFor({ needsUnmute: true });
+		store.state.room.isPlaying = true;
+		await wrapper.vm.$nextTick();
+
+		expect(wrapper.find(".audience-play-overlay").exists()).toBe(true);
+		expect(wrapper.get(".play-hint").text()).toBe("Tap for sound");
+	});
+
+	// The stopped-room and stall cases are a different remedy (start the
+	// picture), so they keep the play wording.
+	it("keeps the play wording when there is no picture yet", async () => {
+		const { wrapper, store } = mountFor({ playbackStalled: true });
+		store.state.room.isPlaying = true;
+		await wrapper.vm.$nextTick();
+
+		expect(wrapper.get(".play-hint").text()).toBe("Tap to Play");
+	});
+
+	// Unmuting is answered LOCALLY, like the stall — the room is already playing,
+	// so asking it to play changes nothing and would announce a no-op to every
+	// other viewer. It is NOT the stall remedy either: the picture is fine.
+	it("emits unmute (and nothing else) when tapped for sound", async () => {
+		const { wrapper, store, connection } = mountFor({ needsUnmute: true });
+		store.state.room.isPlaying = true;
+		await wrapper.vm.$nextTick();
+
+		await wrapper.get(".audience-play-overlay").trigger("click");
+
+		expect(wrapper.emitted("unmute")).toHaveLength(1);
+		expect(wrapper.emitted("unblock")).toBeUndefined();
+		expect(connection.sent).not.toContainEqual({
+			action: "req",
+			request: { type: RoomRequestType.PlaybackRequest, state: true },
+		});
+	});
+
+	// A stall is the stronger claim — there is no picture at all — so it wins,
+	// and its remedy (re-play the now-muted player) is what runs. Unmuting a
+	// player that is not playing would do nothing visible.
+	it("treats a stall as taking precedence over an unmute", async () => {
+		const { wrapper, store } = mountFor({ playbackStalled: true, needsUnmute: true });
+		store.state.room.isPlaying = true;
+		await wrapper.vm.$nextTick();
+
+		await wrapper.get(".audience-play-overlay").trigger("click");
+
+		expect(wrapper.emitted("unblock")).toHaveLength(1);
+		expect(wrapper.emitted("unmute")).toBeUndefined();
+	});
+
+	it("shows no sound prompt to the projectionist", async () => {
+		const { wrapper, store } = mountFor({ isProjectionist: true, needsUnmute: true });
+		store.state.room.isPlaying = true;
+		await wrapper.vm.$nextTick();
+
+		expect(wrapper.find(".audience-play-overlay").exists()).toBe(false);
+	});
+
+	it("shows no sound prompt outside projection mode", async () => {
+		const { wrapper, store } = mountFor({ isProjectionMode: false, needsUnmute: true });
+		store.state.room.isPlaying = true;
+		await wrapper.vm.$nextTick();
+
+		expect(wrapper.find(".audience-play-overlay").exists()).toBe(false);
+	});
 });
 
 /**
@@ -196,5 +272,31 @@ describe("AudiencePlayButton wiring in Room.vue", () => {
 	// `mediaPlaybackBlocked` prompt so the two cannot drift.
 	it("answers it with the same local start the blocked-playback prompt uses", () => {
 		expect(source).toContain('@unblock="onClickUnblockPlayback"');
+	});
+
+	// The sound prompt has the same twice-mounted hazard as the play prompt: a
+	// viewer watching a muted broadcast is in whichever layout their phone is in,
+	// so an unmute handler on only one of them is no handler for half of them.
+	it("handles unmute and passes the muted state at every place it mounts the button", () => {
+		const mounts = source.match(/<AudiencePlayButton[\s\S]*?\/>/g) ?? [];
+
+		expect(mounts.length).toBeGreaterThan(0);
+		for (const mount of mounts) {
+			expect(mount).toContain("@unmute=");
+			expect(mount).toContain(":needs-unmute=");
+		}
+	});
+
+	// Muted autoplay is the whole fix: a shielded YouTube iframe cannot start
+	// with sound on a programmatic play, so it must start muted. Both player
+	// mounts must carry it or the audience in that layout is back to a black
+	// screen with a dead "Tap to Play".
+	it("starts the shielded audience's player muted at every OmniPlayer mount", () => {
+		const mounts = source.match(/<OmniPlayer[\s\S]*?\/>/g) ?? [];
+
+		expect(mounts.length).toBeGreaterThan(0);
+		for (const mount of mounts) {
+			expect(mount).toContain(":start-muted=");
+		}
 	});
 });

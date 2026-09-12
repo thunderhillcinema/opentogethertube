@@ -62,6 +62,8 @@ interface YoutubePlayerApi {
 	getCurrentTime: () => number;
 	seekTo: (position: number) => void;
 	setVolume: (volume: number) => void;
+	mute: () => void;
+	unMute: () => void;
 	loadModule: (module: string) => void;
 	unloadModule: (module: string) => void;
 	getOption: (module: "captions", option: "tracklist") => YoutubeCaptionTrack[] | undefined;
@@ -78,6 +80,14 @@ interface YoutubePlayerApi {
 
 interface Props {
 	videoId: string;
+	/**
+	 * THC fork: start the player MUTED so a programmatic `playVideo()` is allowed
+	 * to autoplay without a user gesture (the browser's muted-autoplay policy).
+	 * Set for a shielded projection audience, who cannot reach the nested iframe
+	 * to satisfy the with-sound policy. `unMute()` lifts it on a tap. See
+	 * `usePlaybackStall` / `needsUnmute` in Room.vue.
+	 */
+	startMuted?: boolean;
 }
 
 /**
@@ -147,6 +157,10 @@ onMounted(async () => {
 				disablekb: 1,
 				// required for iOS
 				playsinline: 1,
+				// THC fork: a shielded audience starts muted so the room-sync
+				// `playVideo()` is allowed to autoplay (muted autoplay needs no
+				// gesture); `unMute()` restores sound on a tap.
+				mute: props.startMuted ? 1 : 0,
 			},
 		});
 	}
@@ -217,6 +231,16 @@ function setVolume(volume: number): void {
 		return;
 	}
 	player.value.setVolume(volume);
+}
+
+// THC fork: YouTube's mute state is distinct from volume — `setVolume` will not
+// lift a `mute()`, so the shielded audience's "Tap for sound" needs this.
+function mute(): void {
+	player.value?.mute();
+}
+
+function unMute(): void {
+	player.value?.unMute();
 }
 
 function isCaptionsSupported(): boolean {
@@ -374,6 +398,8 @@ defineExpose({
 	getPosition,
 	setPosition,
 	setVolume,
+	mute,
+	unMute,
 	isCaptionsSupported,
 	isCaptionsEnabled,
 	setCaptionsEnabled,

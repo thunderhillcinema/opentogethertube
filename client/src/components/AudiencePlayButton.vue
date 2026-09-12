@@ -8,9 +8,9 @@
 					class="play-button"
 					:aria-label="$t('common.play')"
 				>
-					<Icon :icon="mdiPlay" class="size-12 md:size-16" />
+					<Icon :icon="iconGlyph" class="size-12 md:size-16" />
 				</Button>
-				<div class="play-hint">Tap to Play</div>
+				<div class="play-hint">{{ hintText }}</div>
 			</div>
 		</div>
 	</transition>
@@ -18,7 +18,7 @@
 
 <script lang="ts" setup>
 import { computed, ref, watch, onUnmounted } from "vue";
-import { mdiPlay } from "@mdi/js";
+import { mdiPlay, mdiVolumeHigh } from "@mdi/js";
 import { Button } from "@/components/ui/button";
 import { Icon } from "@/components/ui/icon";
 import { useStore } from "@/store";
@@ -35,20 +35,31 @@ const props = withDefaults(
 		 * see `playbackStalled` in Room.vue.
 		 */
 		playbackStalled: boolean;
+		/**
+		 * THC fork: this viewer's player IS running, but muted — the state a
+		 * shielded YouTube iframe has to start in so the browser lets it autoplay
+		 * at all (a gesture on our overlay never reaches the nested frame). The
+		 * picture is fine; only sound is missing, and the shield blocks the
+		 * player's own unmute, so this button carries it. Resolved by the parent —
+		 * see `needsUnmute` in Room.vue.
+		 */
+		needsUnmute: boolean;
 	}>(),
 	{
 		isProjectionMode: false,
 		isProjectionist: false,
 		playbackStalled: false,
+		needsUnmute: false,
 	},
 );
 
 /**
  * A stall is answered by the PARENT, which owns the player. Room.vue's
  * `onClickUnblockPlayback` is that answer and already exists — it is what the
- * upstream `mediaPlaybackBlocked` prompt calls.
+ * upstream `mediaPlaybackBlocked` prompt calls. `unmute` is the parent's
+ * counterpart for a muted-but-playing picture.
  */
-const emit = defineEmits<{ unblock: [] }>();
+const emit = defineEmits<{ unblock: []; unmute: [] }>();
 
 const store = useStore();
 const roomapi = useRoomApi(useConnection());
@@ -121,7 +132,9 @@ onUnmounted(() => {
 const shouldShowButton = computed(() => {
 	const roomStopped = !store.state.room.isPlaying && !isInCooldown.value;
 	const result =
-		props.isProjectionMode && !props.isProjectionist && (roomStopped || props.playbackStalled);
+		props.isProjectionMode &&
+		!props.isProjectionist &&
+		(roomStopped || props.playbackStalled || props.needsUnmute);
 
 	if (props.isProjectionMode) {
 		console.log(
@@ -145,8 +158,20 @@ const shouldShowButton = computed(() => {
 });
 
 /**
- * The two reasons this button appears take two different remedies, and the
- * mutually-exclusive one is why: a stall is defined by the room ALREADY
+ * "Tap for sound" ONLY when sound is the one thing missing: the picture is
+ * already playing (not stalled, not a stopped room), it is just muted. Every
+ * other reason the button shows is about getting a picture, so it keeps the
+ * play wording. A stall outranks an unmute — there is no picture to unmute.
+ */
+const isUnmuteOnly = computed(
+	() => props.needsUnmute && !props.playbackStalled && store.state.room.isPlaying,
+);
+const hintText = computed(() => (isUnmuteOnly.value ? "Tap for sound" : "Tap to Play"));
+const iconGlyph = computed(() => (isUnmuteOnly.value ? mdiVolumeHigh : mdiPlay));
+
+/**
+ * The reasons this button appears take different remedies, and the
+ * mutually-exclusive ones are why: a stall is defined by the room ALREADY
  * playing, so it can never coincide with a stopped room.
  *
  * A stopped room is started by asking the room. The server flips `isPlaying`,
@@ -168,8 +193,18 @@ const shouldShowButton = computed(() => {
 function handlePlayClick() {
 	console.log("[AudiencePlayButton] Play button clicked by audience member");
 
+	// A stall is the stronger claim (no picture at all) and its remedy is the
+	// local re-play, so it is answered first even if the player is also muted.
 	if (props.playbackStalled) {
 		emit("unblock");
+		return;
+	}
+
+	// Playing but muted: sound is all that is missing, answered locally by the
+	// parent's `unMute`. The room is NOT asked — it is already playing, so a
+	// PlaybackRequest would change nothing and announce a no-op to everyone.
+	if (props.needsUnmute) {
+		emit("unmute");
 		return;
 	}
 

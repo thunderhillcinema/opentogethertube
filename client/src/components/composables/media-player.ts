@@ -57,6 +57,13 @@ export interface MediaPlayer {
 	setVolume(volume: number): void | Promise<void>;
 	getPosition(): number;
 	setPosition(position: number): void;
+	/**
+	 * THC fork: clear the browser "muted" state a shielded projection player
+	 * starts in. Optional — only the YouTube player needs an explicit unmute
+	 * (its `mute`/`unMute` are distinct from volume); for every other player
+	 * setting volume is enough and this is a no-op.
+	 */
+	unMute?(): void;
 
 	isCaptionsSupported(): boolean;
 	isQualitySupported(): boolean;
@@ -150,6 +157,12 @@ export class MediaPlayerV2 {
 			return;
 		}
 		this.player.value.setPosition(position);
+	}
+	unMute(): void {
+		if (!this.checkForPlayer(this.player.value)) {
+			return;
+		}
+		this.player.value.unMute?.();
 	}
 }
 
