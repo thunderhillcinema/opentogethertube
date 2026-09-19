@@ -222,7 +222,11 @@ function setPosition(position: number): void {
 		queuedSeek.value = position;
 		return;
 	}
-	player.value.seekTo(position);
+	// allowSeekAhead=true: when the target is outside the currently buffered
+	// range (a far scrubber seek), let the player fetch the new section instead
+	// of stalling. For in-buffer drift corrections this behaves the same, so it
+	// is safe to always pass. Without it a far seek leaves the iframe stuck.
+	player.value.seekTo(position, true);
 }
 
 function setVolume(volume: number): void {
