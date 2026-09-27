@@ -81,6 +81,12 @@ export async function main() {
 	app.use(cookieparser(conf.get("session_secret")));
 
 	const server = http.createServer(app);
+	// Node closes an idle keep-alive socket after 5s by default. The THC channel
+	// materializer cues a room, waits out its pre-roll (~6s), then POSTs the play
+	// on a pooled connection — and a socket closed in that gap fails the play with
+	// a bare connection error on a room that is fine. Hold idle connections well
+	// past that window (under the 60s headersTimeout default).
+	server.keepAliveTimeout = 30_000;
 	async function checkRedis() {
 		if (performance) {
 			const start = performance.now();
