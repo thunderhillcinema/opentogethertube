@@ -90,7 +90,7 @@
 		>
 			<div class="mx-2.5 flex flex-row items-center gap-2" v-if="!store.state.fullscreen">
 				<h1
-					class="relative pl-4 font-display text-foreground text-2xl before:absolute before:bottom-[0.1em] before:left-0 before:top-[0.1em] before:w-1 before:bg-primary before:shadow-[0_0_12px_var(--primary)] before:content-['']"
+					class="relative pl-4 font-display text-foreground text-2xl before:absolute before:left-0 before:inset-y-[0.1em] before:w-1 before:bg-primary before:shadow-[0_0_12px_var(--primary)] before:content-['']"
 				>
 					{{
 						store.state.room.title !== ""
@@ -135,7 +135,7 @@
 					class="relative z-31 flex h-full flex-col group-data-[fullscreen=true]/room:max-h-screen group-data-[fullscreen=true]/room:w-full! group-data-[fullscreen=true]/room:p-0 group-data-[layout=default]/room:w-4/5 group-data-[layout=default]/room:justify-self-center group-data-[layout=default]/room:max-xl:w-full"
 				>
 					<div
-						class="h-full w-full group-data-[fullscreen=true]/room:h-screen"
+						class="size-full group-data-[fullscreen=true]/room:h-screen"
 						ref="playerContainer"
 					>
 						<OmniPlayer
@@ -150,7 +150,7 @@
 						<!-- THC fork: click swallower toggles playback when the viewer is allowed controls -->
 						<div
 							id="mouse-event-swallower"
-							class="absolute top-0 h-full w-full"
+							class="absolute top-0 size-full"
 							:class="{ hidden: controlsVisible }"
 							@click="shouldShowControls ? togglePlayback() : null"
 						></div>
@@ -1165,13 +1165,21 @@ export default defineComponent({
 		}
 
 		function onPlayerReady() {
-			if (currentSource.value?.service === "vimeo") {
-				onPlayerReadyVimeo();
+			if (
+				currentSource.value?.service === "vimeo" ||
+				currentSource.value?.service === "youtube"
+			) {
+				onPlayerReadyApplyRoomState();
 			}
 			isIframeBasedPlayer.value = !!playerContainer.value?.querySelector("iframe");
 			console.log("isIframeBasedPlayer:", isIframeBasedPlayer.value);
 		}
-		async function onPlayerReadyVimeo() {
+		// Iframe-based players can (re)enter the ready state without having the room's current
+		// position/play state applied yet (e.g. YouTube's native-controls toggle remounts the
+		// player, landing it cued at position 0). Re-apply both here rather than waiting for the
+		// timestamp watcher, which never fires while the room is paused.
+		async function onPlayerReadyApplyRoomState() {
+			player?.setPosition(truePosition.value);
 			await applyIsPlaying(store.state.room.isPlaying);
 		}
 
