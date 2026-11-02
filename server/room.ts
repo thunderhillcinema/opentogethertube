@@ -76,6 +76,7 @@ import type { RestoreQueueRequest } from "ott-common/models/messages.js";
 import { type Result, countEligibleVoters, err, ok, voteSkipThreshold } from "ott-common";
 import type { ClientManagerCommand } from "./clientmanager.js";
 import { canKickUser } from "ott-common/userutils.js";
+import { getSubtitleFormatFromUrl } from "ott-common/subtitles.js";
 import { conf } from "./ott-config.js";
 import { ALL_SKIP_CATEGORIES } from "ott-common/constants.js";
 
@@ -1322,8 +1323,8 @@ export class Room implements RoomState {
 				throw new Error("video was undefined");
 			}
 			if (request.video.subtitleUrl) {
-				if (request.video.subtitleUrl.split(".").pop() !== "vtt") {
-					this.log.error("subtitle URL does not end with .vtt");
+				if (getSubtitleFormatFromUrl(request.video.subtitleUrl) === null) {
+					this.log.error("subtitle URL has an unsupported extension");
 					throw new UnsupportedSubtitleType();
 				}
 				video.subtitleUrl = request.video.subtitleUrl;
@@ -1334,7 +1335,11 @@ export class Room implements RoomState {
 			await this.publishRoomEvent(request, context, { video });
 			counterMediaQueued.labels({ service: video.service }).inc();
 		} else if (request.videos) {
+<<<<<<< HEAD
 			const videos: Video[] = await InfoExtract.getManyVideoInfo(request.videos, credentials);
+=======
+			const { videos } = await InfoExtract.getManyVideoInfo(request.videos);
+>>>>>>> upstream/master
 
 			for (let i = 0; i < videos.length; i++) {
 				const video = videos[i];
@@ -1368,7 +1373,7 @@ export class Room implements RoomState {
 	): Promise<void> {
 		if (
 			request.update.subtitleUrl !== undefined &&
-			!request.update.subtitleUrl.endsWith(".vtt")
+			getSubtitleFormatFromUrl(request.update.subtitleUrl) === null
 		) {
 			throw new UnsupportedSubtitleType();
 		}
@@ -1759,8 +1764,8 @@ export class Room implements RoomState {
 			videoToPlay = await InfoExtract.getVideoInfo(request.video.service, request.video.id);
 		}
 		if (request.video.subtitleUrl) {
-			if (request.video.subtitleUrl.split(".").pop() !== "vtt") {
-				this.log.error("subtitle URL does not end with .vtt");
+			if (getSubtitleFormatFromUrl(request.video.subtitleUrl) === null) {
+				this.log.error("subtitle URL has an unsupported extension");
 				throw new UnsupportedSubtitleType();
 			}
 			videoToPlay.subtitleUrl = request.video.subtitleUrl;
