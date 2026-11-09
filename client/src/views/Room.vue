@@ -88,9 +88,12 @@
 			:data-layout="store.state.settings.roomLayout"
 			v-else-if="!showDisconnectedOverlay"
 		>
-			<div class="mx-2.5 flex flex-row items-center gap-2" v-if="!store.state.fullscreen">
+			<div
+				class="mx-2.5 flex flex-row flex-wrap items-center gap-2"
+				v-if="!store.state.fullscreen"
+			>
 				<h1
-					class="relative pl-4 font-display text-foreground text-2xl before:absolute before:bottom-[0.1em] before:left-0 before:top-[0.1em] before:w-1 before:bg-primary before:shadow-[0_0_12px_var(--primary)] before:content-['']"
+					class="relative pl-4 font-display text-foreground text-2xl before:absolute before:left-0 before:inset-y-[0.1em] before:w-1 before:bg-primary before:shadow-[0_0_12px_var(--primary)] before:content-['']"
 				>
 					{{
 						store.state.room.title !== ""
@@ -101,6 +104,7 @@
 					}}
 				</h1>
 				<ClientSettingsDialog />
+				<ChatPlacementToggle :in-video-allowed="inVideoChatAllowed" class="ml-2" />
 				<div class="flex items-center text-sm font-medium uppercase ml-auto">
 					<Tooltip>
 						<TooltipTrigger as-child>
@@ -129,13 +133,13 @@
 				</div>
 			</div>
 			<div
-				class="grid w-full grid-cols-[1fr_auto] grid-rows-[minmax(400px,70vh)] max-lg:grid-cols-1 group-data-[fullscreen=true]/room:m-0 group-data-[fullscreen=true]/room:block group-data-[fullscreen=true]/room:h-screen group-data-[fullscreen=true]/room:max-h-screen group-data-[fullscreen=true]/room:w-screen group-data-[fullscreen=true]/room:aspect-[inherit] group-data-[layout=theater]/room:grid-rows-[minmax(400px,85vh)]"
+				class="grid w-full grid-cols-[minmax(0,1fr)_auto] grid-rows-[minmax(400px,70vh)] max-lg:grid-cols-1 group-data-[fullscreen=true]/room:m-0 group-data-[fullscreen=true]/room:block group-data-[fullscreen=true]/room:h-screen group-data-[fullscreen=true]/room:max-h-screen group-data-[fullscreen=true]/room:w-screen group-data-[fullscreen=true]/room:aspect-[inherit] group-data-[layout=theater]/room:grid-rows-[minmax(400px,85vh)]"
 			>
 				<div
-					class="relative z-31 flex h-full flex-col group-data-[fullscreen=true]/room:max-h-screen group-data-[fullscreen=true]/room:w-full! group-data-[fullscreen=true]/room:p-0 group-data-[layout=default]/room:w-4/5 group-data-[layout=default]/room:justify-self-center group-data-[layout=default]/room:max-xl:w-full"
+					class="relative z-31 flex h-full flex-col group-data-[fullscreen=true]/room:max-h-screen group-data-[fullscreen=true]/room:w-full! group-data-[fullscreen=true]/room:p-0"
 				>
 					<div
-						class="h-full w-full group-data-[fullscreen=true]/room:h-screen"
+						class="size-full group-data-[fullscreen=true]/room:h-screen"
 						ref="playerContainer"
 					>
 						<OmniPlayer
@@ -150,13 +154,13 @@
 						<!-- THC fork: click swallower toggles playback when the viewer is allowed controls -->
 						<div
 							id="mouse-event-swallower"
-							class="absolute top-0 h-full w-full"
+							class="absolute top-0 size-full"
 							:class="{ hidden: controlsVisible }"
 							@click="shouldShowControls ? togglePlayback() : null"
 						></div>
 						<div
 							class="pointer-events-none absolute bottom-20 right-0 h-[70%] min-h-17.5 w-100 px-2.5 py-1.25 max-lg:w-62.5"
-							v-if="controlsMode === 'in-video'"
+							v-if="showInVideoChat"
 						>
 							<Chat ref="chat" @link-click="setAddPreviewText" />
 						</div>
@@ -191,10 +195,48 @@
 					/>
 				</div>
 				<div
-					class="pointer-events-none h-75 min-h-25 w-100 px-2.5 py-1.25 max-lg:w-full"
-					v-if="controlsMode === 'outside-video' && !store.state.fullscreen"
+					v-if="showChatPanel"
+					class="flex h-full max-lg:h-[60vh] max-lg:w-full"
+					data-cy="room-side-panel"
 				>
-					<Chat ref="chat" always-visible @link-click="setAddPreviewText" />
+					<ResizeHandle
+						v-model="chatPanelWidth"
+						:label="$t('chat.resize-panel')"
+						:direction="-1"
+						:min="CHAT_PANEL_MIN_WIDTH"
+						:default-size="DEFAULT_CHAT_PANEL_WIDTH"
+						class="max-lg:hidden"
+					/>
+					<div
+						class="h-full px-2 max-lg:w-full!"
+						:style="{ width: `${chatPanelWidth}px` }"
+					>
+						<RoomSidePanel v-model:tab="sidePanelTab">
+							<template #actions>
+								<Button
+									v-if="inVideoChatAllowed"
+									variant="ghost"
+									size="icon-sm"
+									:aria-label="$t('chat.move-into-video')"
+									:title="$t('chat.move-into-video')"
+									@click="moveChatIntoVideo"
+								>
+									<Icon :icon="mdiPictureInPictureBottomRight" class="size-4" />
+								</Button>
+							</template>
+							<template #chat>
+								<Chat
+									ref="chat"
+									always-visible
+									hide-header
+									@link-click="setAddPreviewText"
+								/>
+							</template>
+							<template #users>
+								<UserList :users="Array.from(store.state.users.users.values())" />
+							</template>
+						</RoomSidePanel>
+					</div>
 				</div>
 			</div>
 			<div class="my-2.5">
@@ -308,7 +350,10 @@
 							</CardContent>
 						</Card>
 					</div>
-					<UserList :users="Array.from(store.state.users.users.values())" />
+					<UserList
+						v-if="!showChatPanel"
+						:users="Array.from(store.state.users.users.values())"
+					/>
 					<ShareInvite />
 				</div>
 			</div>
@@ -359,6 +404,7 @@ import {
 	mdiEyeOff,
 	mdiLock,
 	mdiCircle,
+	mdiPictureInPictureBottomRight,
 } from "@mdi/js";
 import {
 	defineComponent,
@@ -379,6 +425,9 @@ import { PlayerStatus } from "ott-common/models/types";
 import _ from "lodash";
 import OmniPlayer from "@/components/players/OmniPlayer.vue";
 import Chat from "@/components/Chat.vue";
+import ChatPlacementToggle from "@/components/ChatPlacementToggle.vue";
+import ResizeHandle from "@/components/ResizeHandle.vue";
+import RoomSidePanel, { type RoomSidePanelTab } from "@/components/RoomSidePanel.vue";
 import UserList from "@/components/UserList.vue";
 import VideoQueue from "@/components/VideoQueue.vue";
 import RoomSettingsForm from "@/components/RoomSettingsForm.vue";
@@ -408,9 +457,11 @@ import { useCaptions, useMediaPlayer, useVolume } from "@/components/composables
 import { useGrants } from "@/components/composables/grants";
 import { isOfficialSite } from "@/util/misc";
 import { Visibility } from "ott-common/models/types";
+import { ChatPlacement, DEFAULT_CHAT_PANEL_WIDTH } from "@/stores/settings";
 
 const VIDEO_CONTROLS_HIDE_TIMEOUT = 3000;
 const QUEUE_TABS = ["queue", "add", "settings"] as const;
+const CHAT_PANEL_MIN_WIDTH = 280;
 
 type QueueTab = (typeof QUEUE_TABS)[number];
 
@@ -426,6 +477,9 @@ export default defineComponent({
 		VideoQueue,
 		OmniPlayer,
 		Chat,
+		ChatPlacementToggle,
+		ResizeHandle,
+		RoomSidePanel,
 		AddPreview,
 		UserList,
 		RoomSettingsForm,
@@ -1165,13 +1219,21 @@ export default defineComponent({
 		}
 
 		function onPlayerReady() {
-			if (currentSource.value?.service === "vimeo") {
-				onPlayerReadyVimeo();
+			if (
+				currentSource.value?.service === "vimeo" ||
+				currentSource.value?.service === "youtube"
+			) {
+				onPlayerReadyApplyRoomState();
 			}
 			isIframeBasedPlayer.value = !!playerContainer.value?.querySelector("iframe");
 			console.log("isIframeBasedPlayer:", isIframeBasedPlayer.value);
 		}
-		async function onPlayerReadyVimeo() {
+		// Iframe-based players can (re)enter the ready state without having the room's current
+		// position/play state applied yet (e.g. YouTube's native-controls toggle remounts the
+		// player, landing it cued at position 0). Re-apply both here rather than waiting for the
+		// timestamp watcher, which never fires while the room is paused.
+		async function onPlayerReadyApplyRoomState() {
+			player?.setPosition(truePosition.value);
 			await applyIsPlaying(store.state.room.isPlaying);
 		}
 
@@ -1331,6 +1393,36 @@ export default defineComponent({
 			}
 		}
 
+		// chat placement
+		// YouTube's terms don't allow drawing anything over its player, so chat can't go in-video there.
+		const inVideoChatAllowed = computed(() => currentSource.value?.service !== "youtube");
+		const chatPlacement = computed(() =>
+			inVideoChatAllowed.value ? store.state.settings.chatPlacement : ChatPlacement.panel,
+		);
+		const showChatPanel = computed(
+			() => !store.state.fullscreen && chatPlacement.value === ChatPlacement.panel,
+		);
+		const showInVideoChat = computed(
+			() =>
+				inVideoChatAllowed.value &&
+				(store.state.fullscreen || chatPlacement.value === ChatPlacement.video),
+		);
+		const chatPanelWidth = computed({
+			get: () => store.state.settings.chatPanelWidth,
+			set: chatPanelWidth => store.commit("settings/UPDATE", { chatPanelWidth }),
+		});
+		const sidePanelTab = ref<RoomSidePanelTab>("chat");
+		// Chat remounts when it moves between the panel and the video, so the room owns this
+		// shortcut instead of each Chat instance.
+		const chat = ref<InstanceType<typeof Chat> | null>(null);
+		shortcuts.bind({ code: "KeyT" }, () => {
+			sidePanelTab.value = "chat";
+			chat.value?.activate();
+		});
+		function moveChatIntoVideo() {
+			store.commit("settings/UPDATE", { chatPlacement: ChatPlacement.video });
+		}
+
 		// small helper aliases
 		const currentSource = computed(() => store.state.room.currentSource);
 		const production = computed(() => store.state.production);
@@ -1403,6 +1495,16 @@ export default defineComponent({
 
 			roomVisibilityIcon,
 			roomVisibilityLabel,
+
+			inVideoChatAllowed,
+			showChatPanel,
+			showInVideoChat,
+			chatPanelWidth,
+			sidePanelTab,
+			chat,
+			moveChatIntoVideo,
+			CHAT_PANEL_MIN_WIDTH,
+			DEFAULT_CHAT_PANEL_WIDTH,
 			onVisibilityClick,
 
 			// MDI Icons
@@ -1411,6 +1513,7 @@ export default defineComponent({
 			mdiPlus,
 			mdiWrench,
 			mdiCircle,
+			mdiPictureInPictureBottomRight,
 		};
 	},
 });

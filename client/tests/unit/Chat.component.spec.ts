@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import {
 	RoomRequestType,
 	type ClientMessageRoomRequest,
@@ -6,9 +6,14 @@ import {
 } from "ott-common/models/messages";
 import { PlayerStatus, Role } from "ott-common/models/types";
 import Chat from "@/components/Chat.vue";
+import { chatDraft } from "@/components/chat-state";
 import { mountComponent } from "./component-test-utils";
 
 describe("Chat component", () => {
+	beforeEach(() => {
+		chatDraft.value = "";
+	});
+
 	it("opens and closes from the buttons", async () => {
 		const { wrapper } = mountComponent(Chat);
 
@@ -20,6 +25,15 @@ describe("Chat component", () => {
 		await wrapper.get('[data-cy="chat-deactivate"]').trigger("click");
 		expect(wrapper.find('[data-cy="chat-activate"]').exists()).toBe(true);
 		expect(wrapper.find('[data-cy="chat-input"]').exists()).toBe(false);
+	});
+
+	it("can hide its title row when always visible", () => {
+		const { wrapper } = mountComponent(Chat, {
+			props: { alwaysVisible: true, hideHeader: true },
+		});
+
+		expect(wrapper.find(".chat-header").exists()).toBe(false);
+		expect(wrapper.find('[data-cy="chat-input"]').exists()).toBe(true);
 	});
 
 	it("sends the message when enter is pressed", async () => {
@@ -49,6 +63,7 @@ describe("Chat component", () => {
 	it("displays received messages", async () => {
 		const { wrapper, connection } = mountComponent(Chat);
 		await wrapper.get('[data-cy="chat-activate"]').trigger("click");
+		const sentAt = Date.UTC(2026, 10, 1, 22, 41);
 		const message: ServerMessage = {
 			action: "chat",
 			from: {
@@ -59,6 +74,7 @@ describe("Chat component", () => {
 				role: Role.UnregisteredUser,
 			},
 			text: "foo",
+			sentAt,
 		};
 
 		connection.mockReceive(message);
@@ -67,6 +83,10 @@ describe("Chat component", () => {
 		expect(wrapper.findAll(".message")).toHaveLength(1);
 		expect(wrapper.get(".from").text()).toContain("goober");
 		expect(wrapper.get(".text").text()).toContain("foo");
+		expect(wrapper.get(".time").attributes("datetime")).toEqual("2026-11-01T22:41:00.000Z");
+		// The time is shown in the local timezone, which can shift the minute (e.g. UTC+5:30).
+		const localMinute = String(new Date(sentAt).getMinutes()).padStart(2, "0");
+		expect(wrapper.get(".time").text()).toContain(`:${localMinute}`);
 	});
 
 	it("keeps the message list scrolled to the bottom when receiving messages", async () => {
@@ -86,6 +106,7 @@ describe("Chat component", () => {
 				role: Role.UnregisteredUser,
 			},
 			text: "foo",
+			sentAt: Date.now(),
 		});
 		await wrapper.vm.$nextTick();
 		await wrapper.vm.$nextTick();
