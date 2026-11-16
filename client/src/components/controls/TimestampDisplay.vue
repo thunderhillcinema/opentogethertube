@@ -20,7 +20,7 @@ import ClickToEdit from "../ClickToEdit.vue";
 
 withDefaults(
 	defineProps<{
-		currentPosition: number;
+		currentPosition?: number;
 	}>(),
 	{
 		currentPosition: 0,
@@ -36,7 +36,7 @@ const lengthDisplay = computed(() => {
 });
 </script>
 
-<!-- biome-ignore lint/nursery/useScopedStyles: biome migration -->
+<!-- biome-ignore lint/suspicious/useScopedStyles: biome migration -->
 <style lang="scss">
 @use "./media-controls.scss";
 

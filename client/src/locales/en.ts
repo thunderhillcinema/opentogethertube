@@ -230,6 +230,14 @@ export default {
 	chat: {
 		title: "Chat",
 		"type-here": "Type your message here...",
+		placement: {
+			label: "Chat placement",
+			"in-video": "In video",
+			panel: "Panel",
+			"youtube-unsupported": "YouTube doesn't allow chat over its player.",
+		},
+		"move-into-video": "Move chat into the video",
+		"resize-panel": "Resize chat panel. Double-click to reset.",
 	},
 	"share-invite": {
 		title: "Share Invite",
@@ -248,6 +256,13 @@ export default {
 		"no-video-text": 'Click "Add" below to add a video.',
 		// THC fork: shown in embed/projection-booth mode, where viewers have no queue to add to.
 		"no-video-text-audience": "Sit tight, the show will continue shortly.",
+	},
+	"now-playing": {
+		label: "Now playing",
+		"open-original": "Open original",
+		"copy-link": "Copy link",
+		"link-copied": "Copied",
+		"no-description": "No description.",
 	},
 	"add-preview": {
 		label: "Link or Search",
@@ -304,7 +319,7 @@ export default {
 		"start-at": "Start at {timestamp}",
 		edit: {
 			title: "Edit video",
-			"subtitle-url": "Subtitle URL (.vtt)",
+			"subtitle-url": "Subtitle URL (.vtt, .ass)",
 			"subtitle-url-supported-services": "Supported services: direct, googledrive",
 			tooltip: "Edit video settings",
 		},
@@ -442,6 +457,9 @@ export default {
 		"sfx-volume": "Sound Effect Volume",
 		"room-settings": "Default Room Settings",
 		"enable-adapter-selector": "Show adapter selector (advanced)",
+		"native-youtube-controls": "Use YouTube's native control bar",
+		"native-youtube-controls-hint":
+			"Playback is still controlled by OpenTogetherTube. Use YouTube's control bar only to change quality, audio track, or subtitles.",
 	},
 	"connect-overlay": {
 		title: "Disconnected",
