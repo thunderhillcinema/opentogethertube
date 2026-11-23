@@ -54,13 +54,17 @@ const props = withDefaults(
 	defineProps<{
 		sliderPosition: number;
 		truePosition: number;
+<<<<<<< HEAD
 		controlsVisible: boolean;
 		mode: "in-video" | "outside-video";
 		isProjectionMode?: boolean;
 		isProjectionist?: boolean;
+=======
+		controlsVisible?: boolean;
+		mode?: "in-video" | "outside-video";
+>>>>>>> upstream/master
 	}>(),
 	{
-		controlsVisible: false,
 		mode: "in-video",
 		isProjectionMode: false,
 		isProjectionist: false,
@@ -164,7 +168,7 @@ onMounted(() => {
 });
 </script>
 
-<!-- biome-ignore lint/nursery/useScopedStyles: biome migration -->
+<!-- biome-ignore lint/suspicious/useScopedStyles: biome migration -->
 <style lang="scss">
 @use "./media-controls.scss";
 @use "../../variables.scss";
